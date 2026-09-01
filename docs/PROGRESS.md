@@ -29,7 +29,7 @@ Never claim something passes without having run it.
 | 4 | Auth vertical slice (register/login/refresh/logout, /me) | **done** | live smoke: register→login→/me 200, no-token 401; full auth matrix test PASS with `-race` |
 | 5 | Brevo email (outbox, worker, welcome + verify) | **done** (noop) | live E2E: register→outbox→worker→verify→is_verified; replay rejected; worker retry/dead-letter tests PASS. Real Brevo send **BLOCKED** (need template IDs) |
 | 6 | RLS context (SET LOCAL, app_user role) | **done** | migrations 00004–00006; app_user role created; DATABASE_URL switched to app_user; per-request tx + RLS context (service/user roles); cross-user read blocked (RLS proof tests PASS); live smoke as app_user PASS |
-| 7 | First product slice (organizer applications → venues → categories → events → discovery) | not started | — |
+| 7 | First product slice (organizer applications → venues → categories → events → discovery) | **done** | migrations 00007–00009; apply→approve→organizer→venue→event→publish→public discovery; authz matrix test PASS (non-admin 403, cross-organizer 403, draft hidden, published visible) |
 
 **First milestone (definition of done):**
 register → login → profile → organizer application → admin approval → create event → publish → discovery → event details → real venue → navigation.
@@ -49,10 +49,10 @@ Current phase: **4 — Authentication** (auth + email slices done; RLS next).
 | 4 | Authentication | **done** — register/login/refresh/logout + /me; email welcome+verify (outbox+worker) |
 | 5 | RLS context | **done** — base framework + policies on users/auth_sessions/magic_link_tokens/email_*; cross-user reads blocked (proven) |
 | 6 | Flutter offline foundation | not started |
-| 7 | Users and profiles | not started |
-| 8 | Organizer applications | not started |
-| 9 | Venues and categories | not started |
-| 10 | Events/posts + lifecycle | not started |
+| 7 | Users and profiles | **done** (auth slice covers /me) |
+| 8 | Organizer applications | **done** — apply + admin approve/reject |
+| 9 | Venues and categories | **done** — venue create/list, categories seeded |
+| 10 | Events/posts + lifecycle | **done** — create/edit/publish, draft→published visibility |
 | 11 | Media (R2) | not started |
 | 12 | Discovery/search | not started |
 | 13 | Social | not started |
