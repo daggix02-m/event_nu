@@ -27,7 +27,7 @@ Never claim something passes without having run it.
 | 2 | Foundation boots (config, application, middleware, server, healthz/readyz) | **done** | build/vet PASS; `/healthz` 200, `/readyz` 200 against Neon; request_id populated in logs |
 | 3 | DB + migrations (00001_core, 00002_auth) | **done** | goose applied both migrations to Neon (version 2); `/readyz` green |
 | 4 | Auth vertical slice (register/login/refresh/logout, /me) | **done** | live smoke: register→login→/me 200, no-token 401; full auth matrix test PASS with `-race` |
-| 5 | Brevo email (outbox, worker, welcome + verify) | not started | — |
+| 5 | Brevo email (outbox, worker, welcome + verify) | **done** (noop) | live E2E: register→outbox→worker→verify→is_verified; replay rejected; worker retry/dead-letter tests PASS. Real Brevo send **BLOCKED** (need template IDs) |
 | 6 | RLS context (SET LOCAL, app_user role) | not started | — |
 | 7 | First product slice (organizer applications → venues → categories → events → discovery) | not started | — |
 
@@ -38,15 +38,15 @@ register → login → profile → organizer application → admin approval → 
 
 ## 2. Phase Tracker (spec §23 / plan §4)
 
-Current phase: **4 — Authentication** (auth slice done; email integration next).
+Current phase: **4 — Authentication** (auth + email slices done; RLS next).
 
 | Phase | Area | Status |
 |---|---|---|
 | 0 | Product/architecture contract | **done** (spec v3) |
 | 1 | Repository foundation | **done** (2026-09-01) |
-| 2 | Neon DB foundation | **done** — migrations 00001/00002 applied |
+| 2 | Neon DB foundation | **done** — migrations 00001–00003 applied |
 | 3 | Go API foundation | **done** — healthz/readyz, middleware, server |
-| 4 | Authentication | **done** — register/login/refresh/logout + /me, tests PASS |
+| 4 | Authentication | **done** — register/login/refresh/logout + /me; email welcome+verify (outbox+worker) |
 | 5 | RLS context | not started |
 | 6 | Flutter offline foundation | not started |
 | 7 | Users and profiles | not started |
@@ -114,7 +114,7 @@ Record the actual command outcome for each layer as it runs.
 | End-to-end | **done** (auth) | live smoke via running server |
 | Load / performance | not started | — |
 | Payment / webhook | not started | — |
-| Worker / job recovery | not started | — |
+| Worker / job recovery | **done** (email) | fake Brevo server tests: send, retry-then-success, dead-letter; drain via noop worker |
 
 Standard gate (run after every slice):
 `go build ./...` · `go vet ./...` · `go test -race ./...` · `golangci-lint run` *(if available)*
@@ -178,9 +178,10 @@ Standard gate (run after every slice):
 | `BREVO_API_SENDER` | **pending** (daggi.x02@gmail.com) | verified technical sender |
 | `BREVO_SENDER_NAME` | set (Event Nu) | `.env` |
 | `EMAIL_PROVIDER` | set (brevo) | `.env` |
-| `BREVO_TEMPLATE_*` (8) | **pending** | create templates in dashboard, then add |
-| `ADMIN_ALERT_EMAILS` | **pending** | — |
-| `EMAIL_POLL_INTERVAL` / `BATCH_SIZE` / `MAX_ATTEMPTS` | **pending** | worker config |
+| `BREVO_TEMPLATE_*` (8) | **pending** | create templates in dashboard, then add; Welcome+Verify needed for real send |
+| `EMAIL_PROVIDER` | set (brevo in `.env`; noop used for E2E test) | — |
+| `EMAIL_POLL_INTERVAL` / `BATCH_SIZE` / `MAX_ATTEMPTS` | set (2s/20/3) | worker config defaults |
+| `EMAIL_RETRY_BASE_DELAY` | set (30s) | worker backoff base |
 
 ---
 
