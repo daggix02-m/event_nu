@@ -178,17 +178,19 @@ Standard gate (run after every slice):
 | `BREVO_API_SENDER` | **pending** (daggi.x02@gmail.com) | verified technical sender |
 | `BREVO_SENDER_NAME` | set (Event Nu) | `.env` |
 | `EMAIL_PROVIDER` | set (brevo) | `.env` |
-| `BREVO_TEMPLATE_*` (8) | **pending** | create templates in dashboard, then add; Welcome+Verify needed for real send |
+| `BREVO_TEMPLATE_*` (8) | **2/8 done** | Welcome=**3**, Verify=**4** created via API (2026-09-01); 6 remaining (OTP, Password Reset, Login Alert, Order Receipt, Admin Application, Admin Report) |
 | `EMAIL_PROVIDER` | set (brevo in `.env`; noop used for E2E test) | — |
 | `EMAIL_POLL_INTERVAL` / `BATCH_SIZE` / `MAX_ATTEMPTS` | set (2s/20/3) | worker config defaults |
 | `EMAIL_RETRY_BASE_DELAY` | set (30s) | worker backoff base |
+| `BREVO_API_KEY` | updated to newest key | **BLOCKED: Brevo SMTP account not activated** — enable transactional sending or contact Brevo support |
 
 ---
 
 ## 7. Blockers & Open Items
 
 - [ ] Brevo sender `daggi.x02@gmail.com` verification (before first real send).
-- [ ] Brevo template IDs (Welcome + Verify) → `BREVO_TEMPLATE_*`.
+- [ ] Brevo template IDs (Welcome + Verify) → `BREVO_TEMPLATE_*`. — **2/8 done: Welcome=3, Verify=4**
+- [ ] **Brevo SMTP activation** — Brevo returns `403 "Your SMTP account is not yet activated"`. Enable transactional sending in the dashboard or contact Brevo support.
 - [ ] Create `app_user` DB role; point `DATABASE_URL` at it — **DONE (2026-09-01)**
 - [ ] Confirm pgx v5.5+ for `channel_binding=require`.
 - [ ] Production sender deliverability — consider verified custom domain.
