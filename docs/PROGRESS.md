@@ -28,7 +28,7 @@ Never claim something passes without having run it.
 | 3 | DB + migrations (00001_core, 00002_auth) | **done** | goose applied both migrations to Neon (version 2); `/readyz` green |
 | 4 | Auth vertical slice (register/login/refresh/logout, /me) | **done** | live smoke: register→login→/me 200, no-token 401; full auth matrix test PASS with `-race` |
 | 5 | Brevo email (outbox, worker, welcome + verify) | **done** (noop) | live E2E: register→outbox→worker→verify→is_verified; replay rejected; worker retry/dead-letter tests PASS. Real Brevo send **BLOCKED** (need template IDs) |
-| 6 | RLS context (SET LOCAL, app_user role) | not started | — |
+| 6 | RLS context (SET LOCAL, app_user role) | **done** | migrations 00004–00006; app_user role created; DATABASE_URL switched to app_user; per-request tx + RLS context (service/user roles); cross-user read blocked (RLS proof tests PASS); live smoke as app_user PASS |
 | 7 | First product slice (organizer applications → venues → categories → events → discovery) | not started | — |
 
 **First milestone (definition of done):**
@@ -47,7 +47,7 @@ Current phase: **4 — Authentication** (auth + email slices done; RLS next).
 | 2 | Neon DB foundation | **done** — migrations 00001–00003 applied |
 | 3 | Go API foundation | **done** — healthz/readyz, middleware, server |
 | 4 | Authentication | **done** — register/login/refresh/logout + /me; email welcome+verify (outbox+worker) |
-| 5 | RLS context | not started |
+| 5 | RLS context | **done** — base framework + policies on users/auth_sessions/magic_link_tokens/email_*; cross-user reads blocked (proven) |
 | 6 | Flutter offline foundation | not started |
 | 7 | Users and profiles | not started |
 | 8 | Organizer applications | not started |
@@ -109,7 +109,7 @@ Record the actual command outcome for each layer as it runs.
 | Integration | **done** | full auth flow matrix vs real Neon DB (register/login/refresh-rotation/logout/me) |
 | Repository | **done** (auth) | exercised via integration tests; NULL-safe user scan, constraint-aware errors |
 | HTTP handler | **done** (auth) | httptest matrix incl. malformed input, boundary values, authz |
-| Authorization / RLS | not started | — |
+| Authorization / RLS | **done** | cross-user read/session blocked under RLS (proof tests PASS) |
 | Offline sync | not started | — |
 | End-to-end | **done** (auth) | live smoke via running server |
 | Load / performance | not started | — |
@@ -170,7 +170,7 @@ Standard gate (run after every slice):
 | `APP_ENV` | set (development) | `.env` |
 | `PORT` | set (8080) | `.env` |
 | `DATABASE_ADMIN_URL` | set | owner role; for migrations only |
-| `DATABASE_URL` | set (temp: mirrors owner) | **swap to `app_user` before production — owner bypasses RLS** |
+| `DATABASE_URL` | set (app_user) | **app_user role under RLS**; worker presets role=service |
 | `JWT_SECRET` | set | generated; rotate for prod |
 | `JWT_EXPIRY` / `REFRESH_TOKEN_EXPIRY` | set | `.env` |
 | `BREVO_API_KEY` | set | `.env` (ignored) — **rotate** (exposed in chat this session) |
@@ -189,7 +189,7 @@ Standard gate (run after every slice):
 
 - [ ] Brevo sender `daggi.x02@gmail.com` verification (before first real send).
 - [ ] Brevo template IDs (Welcome + Verify) → `BREVO_TEMPLATE_*`.
-- [ ] Create `app_user` DB role; point `DATABASE_URL` at it.
+- [ ] Create `app_user` DB role; point `DATABASE_URL` at it — **DONE (2026-09-01)**
 - [ ] Confirm pgx v5.5+ for `channel_binding=require`.
 - [ ] Production sender deliverability — consider verified custom domain.
 - [ ] Keys hygiene — keep Neon password + Brevo key out of git/chat.

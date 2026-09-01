@@ -218,7 +218,7 @@ Every state-changing HTTP request is tested, including the full auth/authorizati
 
 - [ ] **Brevo sender verification** — confirm `daggi.x02@gmail.com` (technical sender) in the Brevo dashboard before first real send; `event.nua@gmail.com` is user-facing display/reply-to.
 - [ ] **Brevo template IDs** — create 8 templates (start with **Welcome** + **Verify**), feed IDs via `BREVO_TEMPLATE_*` env.
-- [ ] **`app_user` role** — create in Neon; `DATABASE_URL` currently mirrors the owner role (temporary; bypasses RLS — swap before production).
-- [ ] **`channel_binding=require`** — only supported by pgx v5.5+; pin a recent v5.
+- [ ] **`app_user` role** — **done (2026-09-01)**; `DATABASE_URL` now uses it under RLS; worker presets `role=service`.
+- [ ] **`channel_binding=require`** — owner URL only; pgx v5.10 in use (supported).
 - [ ] **Deliverability** — Gmail as Brevo sender risks spam filtering; consider a verified custom domain (e.g. `no-reply@eventnua.com`) for production while keeping `event.nua@gmail.com` as reply-to.
 - [ ] **Keys hygiene** — Neon password + Brevo key in `.env` (ignored). Brevo API key was pasted in chat twice (this session) — **rotate it** in the Brevo dashboard and update `.env`. Admin credentials shared in chat were discarded; change that password.
