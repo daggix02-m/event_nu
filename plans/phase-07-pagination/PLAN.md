@@ -28,23 +28,23 @@ must be documented.
 
 ## Tasks
 
-- [ ] 1. `repository/event.go`: `ListVisible(ctx, limit, offset)` ordering
+- [x] 1. `repository/event.go`: `ListVisible(ctx, limit, offset)` ordering
       `ORDER BY starts_at, id LIMIT $1 OFFSET $2`; `CountVisible(ctx)` matching the
       same RLS/visibility WHERE. Venue equivalent ordering `name, id`.
-- [ ] 2. `service/event.go`: `ListEvents(ctx, page, limit) (items, total int, err)`
+- [x] 2. `service/event.go`: `ListEvents(ctx, page, limit) (items, total int, err)`
       and `ListVenues(...)` same; compute offset from page; fetch `limit+1` rows to
       derive `has_next` without a second query (or use the count — pick one and
       keep it consistent).
-- [ ] 3. `handlers/events.go`: parse `page` (default 1, must be ≥1) and `limit`
+- [x] 3. `handlers/events.go`: parse `page` (default 1, must be ≥1) and `limit`
       (default 20, must be in 1..100). **Invalid values → 400** (negative,
       non-numeric, zero, >100) — do not silently clamp.
-- [ ] 4. Response: `{ "data": [...], "pagination": {page, limit, total, has_next} }`.
-- [ ] 5. Document the shape change (README/PROGRESS).
-- [ ] 6. Tests (DB): default page size; custom size; enforced max (limit>100,
+- [x] 4. Response: `{ "data": [...], "pagination": {page, limit, total, has_next} }`.
+- [x] 5. Document the shape change (README/PROGRESS).
+- [x] 6. Tests (DB): default page size; custom size; enforced max (limit>100,
       limit=0, negative, non-numeric → 400); stable ordering across pages
       (insert >page rows, walk pages, assert no dupes/gaps); `has_next` boundary;
       venue pagination.
-- [ ] 7. Run the gate; update `docs/PROGRESS.md`; commit on `main`.
+- [x] 7. Run the gate; update `docs/PROGRESS.md`; commit on `main`.
 
 ## Verification gate
 
@@ -53,5 +53,5 @@ report DB availability honestly).
 
 ## Definition of Done
 
-- [ ] Both list endpoints bounded (hard max 100, default 20) with 400 on bad params.
-- [ ] Ordering stable across pages; envelope shape documented.
+- [x] Both list endpoints bounded (hard max 100, default 20) with 400 on bad params.
+- [x] Ordering stable across pages; envelope shape documented.
