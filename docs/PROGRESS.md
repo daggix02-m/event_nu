@@ -27,9 +27,11 @@ Never claim something passes without having run it.
 | 2 | Foundation boots (config, application, middleware, server, healthz/readyz) | **done** | build/vet PASS; `/healthz` 200, `/readyz` 200 against Neon; request_id populated in logs |
 | 3 | DB + migrations (00001_core, 00002_auth) | **done** | goose applied both migrations to Neon (version 2); `/readyz` green |
 | 4 | Auth vertical slice (register/login/refresh/logout, /me) | **done** | live smoke: register→login→/me 200, no-token 401; full auth matrix test PASS with `-race` |
-| 5 | Brevo email (outbox, worker, welcome + verify) | **done** (noop) | live E2E: register→outbox→worker→verify→is_verified; replay rejected; worker retry/dead-letter tests PASS. Real Brevo send **BLOCKED** (need template IDs) |
+| 5 | Brevo email (outbox, worker, welcome + verify) | **done** (noop) | live E2E: register→outbox→worker→verify→is_verified; replay rejected; worker retry/dead-letter tests PASS. Real Brevo send **BLOCKED** (SMTP relay not activated → 403) |
 | 6 | RLS context (SET LOCAL, app_user role) | **done** | migrations 00004–00006; app_user role created; DATABASE_URL switched to app_user; per-request tx + RLS context (service/user roles); cross-user read blocked (RLS proof tests PASS); live smoke as app_user PASS |
 | 7 | First product slice (organizer applications → venues → categories → events → discovery) | **done** | migrations 00007–00009; apply→approve→organizer→venue→event→publish→public discovery; authz matrix test PASS (non-admin 403, cross-organizer 403, draft hidden, published visible) |
+| 8 | Post-slice hardening: Brevo config fail-fast + backend README | **done** | commit `6801c2f` (2026-09-02); full gate `build`/`vet`/`go test -race -p 1 -count=1 ./...` PASS; fresh API boot smoke healthz/readyz 200 vs Neon |
+| 9 | **Hardening plan scaffold + baseline (phase-00)** | **done** | `plans/` (README index + `phase-00…phase-11/PLAN.md`) at repo root; Go version consistency verified (toolchain `go1.26.6` ↔ `go.mod go 1.26.6`); `gofmt -w .` normalized 50 files (EOF trailing newline only, no semantic change); baseline gate: fmt CLEAN, build PASS, vet PASS, `go test -race -p 1 -count=1 ./...` PASS (handlers 122s, repository 20s, service 23s, worker 29s; DB-backed tests ran against Neon), golangci-lint **BLOCKED** (not installed) |
 
 **First milestone (definition of done):**
 register → login → profile → organizer application → admin approval → create event → publish → discovery → event details → real venue → navigation.
@@ -38,7 +40,7 @@ register → login → profile → organizer application → admin approval → 
 
 ## 2. Phase Tracker (spec §23 / plan §4)
 
-Current phase: **4 — Authentication** (auth + email slices done; RLS next).
+Current phase: **awaiting Brevo SMTP activation** — phases 0–9 done; Phase C end-to-end send blocked on the 403 relay gate (re-verified 2026-09-02).
 
 | Phase | Area | Status |
 |---|---|---|
@@ -67,7 +69,8 @@ Current phase: **4 — Authentication** (auth + email slices done; RLS next).
 | 22 | Production hardening | not started |
 | 23 | Testing (all layers) | partial — auth matrix + middleware + service done |
 | 24 | Production deployment | not started |
-| 25–29 | Hardening / observability / deploy / verify | not started |
+| 24a | Config fail-fast + backend README | **done** — `6801c2f` (2026-09-02) |
+| 25–29 | Hardening / observability / deploy / verify | **in progress** — goal: security hardening `plans/phase-00…11`, sequential on `main` (baseline in phase-00; next: CI gates phase-01) |
 
 ---
 
@@ -105,7 +108,7 @@ Record the actual command outcome for each layer as it runs.
 
 | Layer | Status | Command / Evidence |
 |---|---|---|
-| Unit | **done** | service (JWT round-trip, hash, validation), shared JSON helpers, config fail-fast |
+| Unit | **done** | service (JWT round-trip, hash, validation), shared JSON helpers, config fail-fast incl. Brevo template-ID guard (`6801c2f`) |
 | Integration | **done** | full auth flow matrix vs real Neon DB (register/login/refresh-rotation/logout/me) |
 | Repository | **done** (auth) | exercised via integration tests; NULL-safe user scan, constraint-aware errors |
 | HTTP handler | **done** (auth) | httptest matrix incl. malformed input, boundary values, authz |
@@ -117,9 +120,9 @@ Record the actual command outcome for each layer as it runs.
 | Worker / job recovery | **done** (email) | fake Brevo server tests: send, retry-then-success, dead-letter; drain via noop worker |
 
 Standard gate (run after every slice):
-`go build ./...` · `go vet ./...` · `go test -race ./...` · `golangci-lint run` *(if available)*
+`go build ./...` · `go vet ./...` · `go test -race -p 1 ./...` *(Makefile: `-p 1` required — integration tests share one dev DB)* · `golangci-lint run` *(if available)*
 
-**Last gate run (auth slice):** build PASS · vet PASS · `go test -race ./...` PASS · golangci-lint **BLOCKED** (not installed)
+**Last gate run (2026-09-02):** build PASS · vet PASS · `go test -race -p 1 -count=1 ./...` PASS (uncached; handlers 132s, repository 15s, service 18s, worker 24s, all packages green) · golangci-lint **BLOCKED** (not installed) · live smoke: fresh API boot vs Neon → `/healthz` 200, `/readyz` 200, graceful shutdown
 
 ---
 
@@ -173,24 +176,25 @@ Standard gate (run after every slice):
 | `DATABASE_URL` | set (app_user) | **app_user role under RLS**; worker presets role=service |
 | `JWT_SECRET` | set | generated; rotate for prod |
 | `JWT_EXPIRY` / `REFRESH_TOKEN_EXPIRY` | set | `.env` |
-| `BREVO_API_KEY` | set | `.env` (ignored) — **rotate** (exposed in chat this session) |
+| `BREVO_API_KEY` | set | `.env` — rotate before prod; never commit/chat |
 | `BREVO_SENDER_EMAIL` | set (event.nua@gmail.com) | `.env` — user-facing display/reply-to |
-| `BREVO_API_SENDER` | **pending** (daggi.x02@gmail.com) | verified technical sender |
+| `BREVO_API_SENDER` | set (daggi.x02@gmail.com) | verified active Brevo sender (id 2) → technical From; reply-to = `event.nua@gmail.com` |
 | `BREVO_SENDER_NAME` | set (Event Nu) | `.env` |
 | `EMAIL_PROVIDER` | set (brevo) | `.env` |
-| `BREVO_TEMPLATE_*` (8) | **2/8 done** | Welcome=**3**, Verify=**4** created via API (2026-09-01); 6 remaining (OTP, Password Reset, Login Alert, Order Receipt, Admin Application, Admin Report) |
-| `EMAIL_PROVIDER` | set (brevo in `.env`; noop used for E2E test) | — |
+| `BREVO_TEMPLATE_*` (8) | **2/8 done** | Welcome=**3**, Verify=**4** — re-validated active via MCP 2026-09-02; 6 remaining (OTP, Password Reset, Login Alert, Order Receipt, Admin Application, Admin Report). Config **fails fast** if unset with `EMAIL_PROVIDER=brevo` (`6801c2f`) |
+| `EMAIL_PROVIDER` | noop used for E2E/test | `.env` sets brevo |
 | `EMAIL_POLL_INTERVAL` / `BATCH_SIZE` / `MAX_ATTEMPTS` | set (2s/20/3) | worker config defaults |
 | `EMAIL_RETRY_BASE_DELAY` | set (30s) | worker backoff base |
-| `BREVO_API_KEY` | updated to newest key | **BLOCKED: Brevo SMTP account not activated** — enable transactional sending or contact Brevo support |
+| Relay / transactional sending | **BLOCKED** | SMTP relay `enabled:false`; send → 403 `"Your SMTP account is not yet activated"`; re-verified via MCP 2026-09-02 (org `6a969ac23190bd578e038837`, free 300/day) |
 
 ---
 
 ## 7. Blockers & Open Items
 
-- [ ] Brevo sender `daggi.x02@gmail.com` verification (before first real send).
+- [x] Brevo sender `daggi.x02@gmail.com` verification — **active (id 2), verified 2026-09-02**.
 - [ ] Brevo template IDs (Welcome + Verify) → `BREVO_TEMPLATE_*`. — **2/8 done: Welcome=3, Verify=4**
-- [ ] **Brevo SMTP activation** — Brevo returns `403 "Your SMTP account is not yet activated"`. Enable transactional sending in the dashboard or contact Brevo support.
+- [ ] **Brevo SMTP activation** — Brevo returns `403 "Your SMTP account is not yet activated"`. Enable transactional sending in the dashboard or contact Brevo support. **Re-verified 2026-09-02: relay still `enabled:false`.**
+- [ ] Leftover dev `eventnu-api` process still bound to `:8080` (pid 178591) — stop when done.
 - [ ] Create `app_user` DB role; point `DATABASE_URL` at it — **DONE (2026-09-01)**
 - [ ] Confirm pgx v5.5+ for `channel_binding=require`.
 - [ ] Production sender deliverability — consider verified custom domain.
