@@ -110,6 +110,13 @@ used in addition to the transaction.
   **at-least-once** delivery, which is the correct trade-off for transactional
   email (duplicates are rare and welcome/verify are idempotent from the user's
   perspective). Within a single Mark*, state is atomic.
+- **Proven by tests (phase-10):** failure injected between a successful
+  provider call and `MarkSent` leaves the row `pending` (retryable) with no
+  committed `sent` log; N concurrent workers claiming the same rows each send
+  every row exactly once (no double-send, via `SKIP LOCKED`); a dead claimer's
+  leased row becomes claimable again after lease expiry and is eventually
+  delivered; cancelling the worker mid-send keeps the claim retryable
+  (never half-written) and a restarted worker delivers it.
 
 ---
 

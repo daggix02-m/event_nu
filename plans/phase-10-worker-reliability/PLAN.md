@@ -15,20 +15,20 @@ drain with no in-flight email half-written.
 
 ## Tasks
 
-- [ ] 1. Failure-injection test: make `SendBrevo` fail **after** the provider call
+- [x] 1. Failure-injection test: make `SendBrevo` fail **after** the provider call
       but before `MarkSent` commits → assert the outbox row remains `pending`
       (retryable) and never a combination of `sent` + uncommitted.
-- [ ] 2. Concurrency test: N worker goroutines claiming the same pending rows →
+- [x] 2. Concurrency test: N worker goroutines claiming the same pending rows →
       total sent == total claimed, no double-send (each row claimed once via the
       `SKIP LOCKED` lease).
-- [ ] 3. Lease-expiry test: a `claiming` row older than the lease interval becomes
+- [x] 3. Lease-expiry test: a `claiming` row older than the lease interval becomes
       claimable again → recovery path works; bound the test with a short fake
       lease/clock.
-- [ ] 4. Graceful-shutdown test: worker drains in-flight claims before exit; a
+- [x] 4. Graceful-shutdown test: worker drains in-flight claims before exit; a
       claim interrupted mid-send rolls back to `pending` (no loss).
-- [ ] 5. Only if a test surfaces a real defect: fix `worker/email.go` minimally
+- [x] 5. Only if a test surfaces a real defect: fix `worker/email.go` minimally
       (no new deps) and update `docs/multi-step-operations.md`'s worker row.
-- [ ] 6. Run the gate; update `docs/PROGRESS.md`; commit on `main`
+- [x] 6. Run the gate; update `docs/PROGRESS.md`; commit on `main`
       (commit may be test-only if no defect was found).
 
 ## Verification gate
@@ -38,6 +38,6 @@ DB availability honestly).
 
 ## Definition of Done
 
-- [ ] Worker suite proves at-least-once + no-duplicate under the three failure modes.
-- [ ] If a defect was found, it is fixed minimally and documented; otherwise the
+- [x] Worker suite proves at-least-once + no-duplicate under the three failure modes.
+- [x] If a defect was found, it is fixed minimally and documented; otherwise the
       suite documents the existing guarantees.
