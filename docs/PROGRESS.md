@@ -70,7 +70,7 @@ Current phase: **awaiting Brevo SMTP activation** — phases 0–9 done; Phase C
 | 23 | Testing (all layers) | partial — auth matrix + middleware + service done |
 | 24 | Production deployment | not started |
 | 24a | Config fail-fast + backend README | **done** — `6801c2f` (2026-09-02) |
-| 25–29 | Hardening / observability / deploy / verify | **in progress** — goal: security hardening `plans/phase-00…11`, sequential on `main` (baseline in phase-00; next: CI gates phase-01) |
+| 25–29 | Hardening / observability / deploy / verify | **in progress** — security hardening `plans/phase-00…11`, sequential on `main`. phase-00 baseline done; **phase-01 CI gates done (2026-09-06)** — `.github/workflows/ci.yml` + `make ci`, proven against a local `postgres:16` container; next: phase-02 auth quick wins |
 
 ---
 
@@ -119,6 +119,7 @@ Record the actual command outcome for each layer as it runs.
 | Payment / webhook | not started | — |
 | Worker / job recovery | **done** (email) | fake Brevo server tests: send, retry-then-success, dead-letter; drain via noop worker |
 | 8 unused packages | **done** (2026-09-06) | added test files to every `[no test files]` package: `cmd/api`+`cmd/worker` (newLogger dev/prod format+level, stdout capture), `api` (NewApp wiring/isolation), `api/dto` (JSON field-name + round-trip contract), `api/routes` (healthz/readyz/404/405/401 + route-registration matrix, DB-backed), `domain` (role constants, zero-value/optional-pointer guards), `infrastructure/email` (Brevo payload+headers, 200/201/4xx/5xx error mapping, Retryable matrix, baseURL trim, Noop), `validator` (email/required/min/max runes/order). Gate: fmt CLEAN · vet PASS · `go test -race -p 1 -count=1 ./...` all 16 packages `ok` |
+| CI quality gates (**phase-01**, 2026-09-06) | **done** | `.github/workflows/ci.yml` (push main + PR): postgres:16 service + `app_user` bootstrap (CREATE ROLE, CONNECT/SCHEMA USAGE, `ALTER DEFAULT PRIVILEGES`→app_user) → goose `up` → gofmt/vet/build/tests; `make ci` mirror target; README + `.env.example` docs. **Validated end-to-end locally**: same bootstrap+migrations applied clean on a fresh `postgres:16` container (9/9 migrations up), `make ci` PASS (all 16 packages, DB-backed + RLS proof tests ran as `app_user`, not skipped), YAML parse OK. **Live CI run**: BLOCKED until first push (run happens on GitHub). golangci-lint: BLOCKED (not installed locally; still absent from the workflow — separate follow-up). Note: local shell exports `GOROOT=<mise go/1.26.4>` while the active `go` is the distro go1.26.6 → tool/compile mismatch; gate run with `env -u GOROOT` (project `go.mod` pins 1.26.6; setup-go in CI is unaffected) |
 
 Standard gate (run after every slice):
 `go build ./...` · `go vet ./...` · `go test -race -p 1 ./...` *(Makefile: `-p 1` required — integration tests share one dev DB)* · `golangci-lint run` *(if available)*
