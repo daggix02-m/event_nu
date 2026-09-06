@@ -17,22 +17,22 @@
 
 ## Tasks
 
-- [ ] 1. Add a shared `ParseUUIDParam(r, "id") (uuid.UUID, bool)` helper that
+- [x] 1. Add a shared `ParseUUIDParam(r, "id") (uuid.UUID, bool)` helper that
       returns false for malformed values. Every handler that binds a UUID path
       param: if !ok → `404` (with the standard not-found body/first placeholder),
       **before** any DB call. Re-check all current UUID path handlers for the
       `22P02` → 500 path (organizer by id, event by id, venue by id, etc.).
-- [ ] 2. Confirm with an integration test that
+- [x] 2. Confirm with an integration test that
       `GET /api/v1/organizers/not-a-uuid` (and one event/venue equivalent) returns
       404, not 500; keep sub-detail generic (404 without hinting).
-- [ ] 3. New `metrics.go` (no external dependency): prometheus-text-format
+- [x] 3. New `metrics.go` (no external dependency): prometheus-text-format
       endpoint with process memory (`runtime.ReadMemStats`), goroutines, GC count,
       and `http_requests_total` counter incremented by a small middleware added
       alongside the auth stack (not inside `LogRequest`).
-- [ ] 4. Register `GET /healthz/metrics` (or `/metrics` per repo convention) on a
+- [x] 4. Register `GET /healthz/metrics` (or `/metrics` per repo convention) on a
       non-RLS, no-auth route; `/metrics` handler does **not** read the tx context.
-- [ ] 5. Tests: metrics endpoint 200 + expected labels; invalid-UUID matrix (DB-free).
-- [ ] 6. Run the gate; update `docs/PROGRESS.md`; commit on `main`.
+- [x] 5. Tests: metrics endpoint 200 + expected labels; invalid-UUID matrix (DB-free).
+- [x] 6. Run the gate; update `docs/PROGRESS.md`; commit on `main`.
 
 ## Verification gate
 
@@ -41,5 +41,5 @@ matrix DB-free; event/venue 404 check reports DB availability honestly).
 
 ## Definition of Done
 
-- [ ] Malformed UUIDs return 404 everywhere; no `22P02` 500 reaches clients.
+- [x] Malformed UUIDs return 404 everywhere; no `22P02` 500 reaches clients.
 - [ ] `/metrics` exposes process + request counters with no new dependencies.
