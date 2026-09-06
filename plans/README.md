@@ -23,6 +23,10 @@ verifiable.
 | 10 | `phase-10-worker-reliability` | Email worker reliability tests | 00 |
 | 11 | `phase-11-final-audit` | Full security audit, docs, final gate, report | all prior |
 
+**Status: all 12 phases shipped on `main` (2026-09-06)** — see
+`docs/SECURITY_HARDENING_FINAL_REPORT.md` for the findings-by-finding outcome
+table and `docs/PROGRESS.md` Testing Log for per-phase evidence.
+
 Sessions may pause/resume at any phase boundary. Do **02 before 09** (both touch
 `LogRequest`). Do **01 before 08** if you want the idempotency migration exercised
 in CI.
