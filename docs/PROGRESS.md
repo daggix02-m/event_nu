@@ -118,6 +118,7 @@ Record the actual command outcome for each layer as it runs.
 | Load / performance | not started | — |
 | Payment / webhook | not started | — |
 | Worker / job recovery | **done** (email) | fake Brevo server tests: send, retry-then-success, dead-letter; drain via noop worker |
+| 8 unused packages | **done** (2026-09-06) | added test files to every `[no test files]` package: `cmd/api`+`cmd/worker` (newLogger dev/prod format+level, stdout capture), `api` (NewApp wiring/isolation), `api/dto` (JSON field-name + round-trip contract), `api/routes` (healthz/readyz/404/405/401 + route-registration matrix, DB-backed), `domain` (role constants, zero-value/optional-pointer guards), `infrastructure/email` (Brevo payload+headers, 200/201/4xx/5xx error mapping, Retryable matrix, baseURL trim, Noop), `validator` (email/required/min/max runes/order). Gate: fmt CLEAN · vet PASS · `go test -race -p 1 -count=1 ./...` all 16 packages `ok` |
 
 Standard gate (run after every slice):
 `go build ./...` · `go vet ./...` · `go test -race -p 1 ./...` *(Makefile: `-p 1` required — integration tests share one dev DB)* · `golangci-lint run` *(if available)*
