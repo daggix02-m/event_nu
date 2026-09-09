@@ -1,0 +1,22 @@
+# Local CI-equivalent database. Mirrors the Postgres 16 service in
+# .github/workflows/ci.yml so `make db-up && make ci` runs the exact gates CI
+# enforces, against a fast local Postgres instead of the shared dev DB.
+#
+# No named volume: `make db-down && make db-up` always starts from a clean
+# database, matching CI. Host port 55432 avoids clashing with any Postgres
+# already on 5432, and binds to localhost only.
+services:
+  postgres:
+    image: postgres:16
+    container_name: event_nu_ci_pg
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: event_nu_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
