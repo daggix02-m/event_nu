@@ -21,3 +21,6 @@ apps/mobile/.flutter-plugins-dependencies
 
 # OS
 .DS_Store
+# Local media storage (dev/tests)
+media-store/
+backend/media-store/

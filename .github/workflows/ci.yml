@@ -30,6 +30,7 @@ jobs:
       DATABASE_URL: postgres://app_user:app_user_pass@localhost:5432/event_nu_test?sslmode=disable
       JWT_SECRET: ci-only-test-secret-never-used-in-production
       EMAIL_PROVIDER: noop
+      CGO_ENABLED: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +38,11 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
+
+      # libwebp headers are required to CGO-compile the WebP encoder used by
+      # the media variant worker (internal/infrastructure/imaging).
+      - name: Install libwebp
+        run: sudo apt-get update && sudo apt-get install -y libwebp-dev
 
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@v3.27.3
