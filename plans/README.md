@@ -31,6 +31,11 @@ Sessions may pause/resume at any phase boundary. Do **02 before 09** (both touch
 `LogRequest`). Do **01 before 08** if you want the idempotency migration exercised
 in CI.
 
+> The hardening plan (00–11) is complete (2026-09-06) and the index above is
+> frozen for reference. API completion phases 12–15 are tracked by their own
+> `~/.local/share/opencode/plans/phase-<NN>-*/PLAN.md` files; the current
+> tracked plan is **phase-15-payments-chapa (shipped 2026-09-11)**.
+
 ## Standard verification gate
 
 Run at the end of **every** phase, from `backend/`:
