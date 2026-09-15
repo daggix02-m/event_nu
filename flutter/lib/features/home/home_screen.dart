@@ -39,6 +39,11 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () => context.go(AppRoute.myRsvps.path),
           ),
           IconButton(
+            icon: const Icon(Icons.confirmation_number_outlined),
+            tooltip: 'My Tickets',
+            onPressed: () => context.go(AppRoute.myTickets.path),
+          ),
+          IconButton(
             icon: const Icon(Icons.bookmark_outline),
             tooltip: 'My Saves',
             onPressed: () => context.go(AppRoute.saves.path),

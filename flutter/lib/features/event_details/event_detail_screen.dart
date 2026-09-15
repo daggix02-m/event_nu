@@ -14,6 +14,7 @@ import '../engagement/widgets/review_section.dart';
 import '../engagement/widgets/rsvp_button.dart';
 import '../social/widgets/comment_section.dart';
 import '../social/widgets/social_action_row.dart';
+import '../tickets/widgets/checkout_sheet.dart';
 import 'organizer_chip.dart';
 import 'venue_preview.dart';
 
@@ -115,6 +116,13 @@ class _EventDetailBody extends StatelessWidget {
                   style: textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 24),
+                if (event.actionType.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => showCheckoutSheet(context, event.id),
+                    icon: const Icon(Icons.confirmation_number_outlined),
+                    label: const Text('Get tickets'),
+                  ),
+                const SizedBox(height: 16),
                 RsvpButton(eventId: event.id),
                 const SizedBox(height: 16),
                 SocialActionRow(

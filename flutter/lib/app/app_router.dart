@@ -12,6 +12,7 @@ import '../features/event_details/event_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/saves/my_saves_screen.dart';
 import '../features/search/search_screen.dart';
+import '../features/tickets/my_tickets_screen.dart';
 import '../features/venues/venue_detail_screen.dart';
 
 enum AppRoute {
@@ -21,6 +22,7 @@ enum AppRoute {
   verify('/auth/verify'),
   search('/search'),
   saves('/saves'),
+  myTickets('/my-tickets'),
   notifications('/notifications'),
   myRsvps('/my-rsvps');
 
@@ -96,6 +98,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.saves.path,
         builder: (_, _) => const MySavesScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.myTickets.path,
+        builder: (_, _) => const MyTicketsScreen(),
       ),
       GoRoute(
         path: AppRoute.notifications.path,
