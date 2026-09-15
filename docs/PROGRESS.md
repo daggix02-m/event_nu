@@ -40,7 +40,7 @@ register → login → profile → organizer application → admin approval → 
 
 ## 2. Phase Tracker (spec §23 / plan §4)
 
-Current status: **Go backend API complete** — all backend phase-lots `00`–`20` shipped on `main` (see index `~/.local/share/opencode/plans/README.md`; schema at migration `00022` → DB v22). **Flutter phase-21 foundation shipped** (2026-09-15): project scaffold, design system, envelope API client, serialized token refresh, full auth flow + Linux-desktop E2E. Next: phase-22 discovery. Remaining backend work is the §5 production go-live checklist, not feature code.
+Current status: **Go backend API complete** — all backend phase-lots `00`–`20` shipped on `main` (see index `~/.local/share/opencode/plans/README.md`; schema at migration `00022` → DB v22). **Flutter application complete** — phases `21`–`27` shipped on `main` (2026-09-15): foundation/auth, discovery feed + event/venue/search, social (comments/likes/saves), engagement (RSVP/notifications/reviews/reports), tickets (checkout/QR wallet), offline (sync cache + offline banner + read-through feed fallback), media (share moments + event gallery + presigned upload). Final gate: `flutter analyze` No issues found · `flutter test` 35/35 PASS. Remaining work is the §5 production go-live checklist (external infra: Neon prod, Brevo templates 6/8 + SMTP relay, R2/CDN prod, admin app), not feature code.
 
 | Phase | Area | Status |
 |---|---|---|
@@ -54,15 +54,15 @@ Current status: **Go backend API complete** — all backend phase-lots `00`–`2
 | 7 | Organizer applications | **done** — apply + admin approve/reject |
 | 8 | Venues and categories | **done** — venue create/list/patch/detail, categories seeded (phase-09); sync venues/categories delta (phase-16) |
 | 9 | Events/posts + lifecycle | **done** — create/edit/publish, draft→published visibility, date-window search (phases 10, 12d) |
-| 10 | Media (R2) | **done** — upload/presigned/complete, variants, worker, CDN URL, cleanup (phase-13, DB v15); Flutter capture UI is phase-27 |
+| 10 | Media (R2) | **done** — upload/presigned/complete, variants, worker, CDN URL, cleanup (phase-13, DB v15); Flutter share-moment + gallery shipped (phase-27) |
 | 11 | Discovery/search | **done** — FTS search filters (title/desc/venue/organizer), pagination, date-window (phase-12d) |
 | 12 | Social | **done** — comments+likes (12a), saves+folders+shares+follows (12b) |
 | 13 | RSVP | **done** — atomic capacity registration, public directory (phases 12c, 18) |
 | 14 | Tickets + orders + payments | **done** — tiers/orders/QR check-in (phase-14, DB v16); Chapa payments + webhooks (phase-15, DB v17) |
 | 15 | Reviews/ratings | **done** — eligibility + duplicate rule + rating (phase-12c) |
 | 16 | Reporting + moderation | **done** — event/user/venue reports + moderation status (phase-12c), admin moderation endpoints (phase-12d) |
-| 17 | Notifications + reminders | **done** — inbox/hooks/reminders (phase 12d) + FCM push dispatch backend (phase 17, DB v19); Flutter UI + APNs planned (phases 24/25) |
-| 18 | Offline sync | **done** — cursor delta endpoint `GET /sync` (phase-16, DB v18); Flutter SQLite consumer planned (phase 26) |
+| 17 | Notifications + reminders | **done** — inbox/hooks/reminders (phase 12d) + FCM push dispatch backend (phase 17, DB v19); Flutter inbox UI shipped (phase-24); APNs/push-client registration still open |
+| 18 | Offline sync | **done** — cursor delta endpoint `GET /sync` (phase-16, DB v18); Flutter sync cache + offline banner + read-through feed shipped (phase-26, pragmatic subset) |
 | 19 | Schedules + Q&A | **done** — organizer schedule CRUD, audience questions/upvotes/pin/answer (phase-19, DB v21) |
 | 20 | Badges + recaps | **done** — milestone awards, cached event recaps (phase-20, DB v22) |
 | 21 | Next.js admin | not started — separate admin app (Flutter must not touch Prisma/Neon) |
@@ -155,7 +155,19 @@ Backend wrap-up (**phase-20b**, 2026-09-15) | **done** | `backend/.env.example` 
 
 Flutter foundation (**phase-21**, 2026-09-15) | **done** | `flutter/` project scaffolded (Flutter 3.44.2, Dart; deps: go_router ^18, flutter_riverpod ^3.4, dio ^5.11, flutter_secure_storage ^11, google_fonts ^8, intl, json_serializable/build_runner for codegen). Design system: `design/app_colors.dart` (obsidian `#141217` + neon lavender `#A078FF` M3 roles), `app_space.dart` (4px scale), `app_text.dart` (Space Grotesk/Inter), `app/app_theme.dart` (dark M3 `ColorScheme`; note: Flutter 3.44 param is `onInverseSurface`). Core: `api/api_envelope.dart` (`{"data":…}` unwrap; `{error:{code,message}}` → `ApiException`; confirmed every endpoint is envelope-wrapped), `api/api_client.dart` (Dio + unwrap + Retry-After), `api/api_exception.dart`, `api/auth_interceptor.dart` (401 → shared-inflight refresh → retry-once → refresh-failed hook; skips login/register/refresh paths; Dio attached via `attachDio`), `storage/token_storage.dart` (SecureTokenStorage + InMemory for tests), `auth/session.dart` (sealed `AuthState` + `SessionController` AsyncNotifier: restore/signIn/register/verifyCode/logout). Auth: `data/user.dart`+`auth_tokens.dart` (`@JsonKey` snake_case: `photo_url`/`is_verified`/`created_at`/`access_token`/`refresh_token`/`expires_in_seconds`), `auth_repository.dart`, screens sign_in/register/verify (6-digit OTP auto-submit + resend timer). Wiring: `app/providers.dart` (dio + interceptor + refresh action), `app/app_router.dart` (GoRouter redirect keyed on session; loading-guard: `isLoading && !hasValue` → null — bug found in tests), `app.dart`/`main.dart`. Tests: `flutter analyze` No issues found · `flutter test` 2/2 (unauthenticated → sign-in redirect; authenticated verified → home) · **live Linux-desktop E2E PASS** (`integration_test/auth_e2e_test.dart`): register via UI → verify code pulled from `email_outbox` (`params->>'verify_code'`, template_id 11 — required `BREVO_TEMPLATE_VERIFY=11` in dev `.env`) → home "Discover" → logout → login. Envelope + snake_case corrections recorded in `flutter/EVENT_NU_FLUTTER_BACKEND_INTEGRATION.md`.
 
-**Last gate run (2026-09-15, after phase-21):** gofmt CLEAN · build PASS · vet PASS · `go test -race -p 1 -count=1 -timeout 30m ./...` PASS (all 17 packages, handlers 1111s — accumulated shared dev DB) · golangci-lint v1.64.8 PASS (0 findings) · 0 flaky tests remaining · DB at v22 · `flutter analyze` No issues found · `flutter test` 2/2 PASS · Linux-desktop auth E2E PASS
+Flutter discovery (**phase-22**, 2026-09-15) | **done** | `a4b3b8c`: `core/ext/json_utils.dart` (JsonMapX helpers), `core/api/pagination.dart` (`Paginated<T>` + envelope parse), `ApiClient.getEnvelope`, discovery data models (Event/Venue/Organizer/Category), `discovery_repository.dart`, `discovery_providers.dart` (`FeedController` AsyncNotifier: filters + paginated loadMore), widgets event_card/category_pills/event_feed, shared status_chip + state_views (loading/empty/error), home feed + event detail + venue detail + search screens, router `/events/:id`, `/venues/:id`, `/search`. Tests `discovery_test.dart` (7: models parse, feed renders skeleton→cards, category filter, event card → detail nav, detail loads venue preview, search field). Gate: analyze clean · `flutter test` 7/7 PASS |
+
+Flutter social (phase-23, 2026-09-15) | **done** | `168695f`: event-detail SocialActionRow (optimistic like + rollback) + CommentSection, `/saves` route + MySaves groups + unsave, home bookmark icon, comment-tile report; Riverpod 3 lesson: no `FamilyAsyncNotifier` — family notifiers are `AsyncNotifier` subclasses whose constructor takes the arg (`AsyncNotifierProvider.family<C,S,Arg>(C.new)`); `valueOrNull` removed → `.value` (nullable). Tests 14/14. Gate: analyze clean · `flutter test` 14/14 PASS |
+
+Flutter engagement (**phase-24**, 2026-09-15) | **done** | `c4ff90c`: `features/engagement/` models/repository/providers (RsvpController family, MyRsvpsController, NotificationsController, ReviewsController), rsvp_button, review_section (no review-report — backend has no such endpoint), report_sheet (event/user/venue/comment), notifications + my-rsvps screens, `/notifications` + `/my-rsvps` routes, event-detail RSVP/reviews/report wiring; `pumpAndSettle` needed after chip selection. Tests 22/22. Gate: analyze clean · `flutter test` 22/22 PASS |
+
+Flutter tickets (**phase-25**, 2026-09-15) | **done** | `c65db92`: `features/tickets/` data models (TicketType priceLabel/canBuy, TicketItem + QR payload JSON, OrderResult.needsPaymentRedirect), repository (listTicketTypes/createOrder/myTickets), providers (family `ticketTypesControllerProvider`, `myTicketsControllerProvider`), checkout_sheet (tier steppers + total + place order → invalidate wallet + Chapa redirect via `url_launcher`), my_tickets_screen with QR (`qr_flutter`). Routes `/my-tickets` + home app-bar icon + event-detail "Tickets" button. Bug found: mutating a `const []` in `build()` (`..sort`) throws — copy first. Tests 26/26. Gate: analyze clean · `flutter test` 26/26 PASS |
+
+Flutter offline (**phase-26**, 2026-09-15, pragmatic subset) | **done** | `efc9391` part 1: `core/sync/` — models (SyncChange/SyncData), store (`SyncStore` + `LazyPrefsSyncStore` via shared_preferences + `InMemorySyncStore` for tests), engine (`GET /api/v1/sync?cursor=&domains=&limit=` pull → apply changes → persist cursor), `SyncController` (offline/error state), `OfflineBanner` (home), read-through feed fallback (`FeedController.build` catches `network_error` → serves cached synced events); `ApiClient.post` now accepts `idempotencyKey` (`Idempotency-Key` header) for protectedIdem routes. Tests `sync_test.dart` (apply+cursor, controller offline flag, feed fallback). Gate: analyze clean · `flutter test` green |
+
+Flutter media & moments (**phase-27**, 2026-09-15, pragmatic subset) | **done** | `efc9391` part 2: `features/moments/` data models (UploadIntent/MediaAsset/MediaVariant/Moment), repository (createUploadIntent → presigned PUT → completeUpload → shareMoment, all idempotent-keyed; eventMoments paginated), providers (mediaAsset family, EventMomentsController family + loadMore, ShareMomentController), share_moment_sheet (image_picker, preview, caption, step error UI), event_gallery_screen (3-col grids, CachedNetworkImage, lightbox, self-triggering pagination), router `/events/:id/gallery`, event-detail Gallery/Share/Tickets buttons. Tests `moments_test.dart` (model parse, share flow incl. snackbar, gallery empty state). Gate: analyze clean · `flutter test` 35/35 PASS |
+
+**Last gate run (2026-09-15, after phase-27):** gofmt CLEAN · build PASS · vet PASS · `go test -race -p 1 -count=1 -timeout 30m ./...` PASS (all 17 packages, last full run phase-20b) · golangci-lint PASS (0 findings) · `flutter analyze` No issues found · `flutter test` 35/35 PASS · DB at v22 · backend + Flutter both feature-complete; only §5 infra items remain
 
 ---
 
@@ -187,7 +199,11 @@ Flutter foundation (**phase-21**, 2026-09-15) | **done** | `flutter/` project sc
 - [ ] Idempotent order receipts
 
 ### Flutter
-- [ ] Local DB / offline reads / write outbox / retry / idempotency / conflict handling / secure token storage / push
+- [x] Secure token storage — `flutter_secure_storage` (`core/storage/token_storage.dart`, phase-21)
+- [x] Offline reads — sync cache + feed read-through fallback (`core/sync/`, phase-26)
+- [x] Retry / idempotency — `Idempotency-Key` on protectedIdem POSTs (`ApiClient.post`, phase-26/27)
+- [ ] Local DB / write outbox / full conflict handling — **deferred** (pragmatic subset replaces SQLite outbox with cache + read-through; full offline-write queue remains, see plan §26)
+- [ ] Push notifications (client) — backend FCM dispatch shipped (phase-17); device registration + APNs/Android client push registration still open
 
 ### Admin
 - [ ] Secure login / admin role enforcement / HttpOnly cookie / server-side Prisma only / RLS / audited moderation / business actions via Go
