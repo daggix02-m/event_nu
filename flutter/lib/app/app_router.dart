@@ -8,6 +8,7 @@ import '../features/auth/screens/sign_in_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
 import '../features/event_details/event_detail_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/saves/my_saves_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/venues/venue_detail_screen.dart';
 
@@ -16,7 +17,8 @@ enum AppRoute {
   signIn('/auth/sign-in'),
   register('/auth/register'),
   verify('/auth/verify'),
-  search('/search');
+  search('/search'),
+  saves('/saves');
 
   const AppRoute(this.path);
 
@@ -86,6 +88,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.search.path,
         builder: (_, _) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.saves.path,
+        builder: (_, _) => const MySavesScreen(),
       ),
       GoRoute(
         path: '/events/:id',

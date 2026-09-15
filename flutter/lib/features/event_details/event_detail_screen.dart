@@ -9,6 +9,8 @@ import '../../shared/widgets/state_views.dart';
 import '../../shared/widgets/status_chip.dart';
 import '../discovery/data/event.dart';
 import '../discovery/discovery_providers.dart';
+import '../social/widgets/comment_section.dart';
+import '../social/widgets/social_action_row.dart';
 import 'organizer_chip.dart';
 import 'venue_preview.dart';
 
@@ -96,24 +98,14 @@ class _EventDetailBody extends StatelessWidget {
                   style: textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 24),
-                Card(
-                  color: AppColors.surfaceContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpace.md),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.forum_outlined, color: AppColors.neon),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Likes, comments and saves arrive in the social phase.',
-                            style: textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                SocialActionRow(
+                  eventId: event.id,
+                  initialLiked: event.likedByMe,
+                  initialLikeCount: event.likeCount,
+                  initialSaved: event.savedByMe,
                 ),
+                const SizedBox(height: 28),
+                CommentSection(eventId: event.id),
                 const SizedBox(height: 48),
               ],
             ),
