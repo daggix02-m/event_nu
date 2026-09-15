@@ -6,17 +6,24 @@ import '../core/auth/session.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/sign_in_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
+import '../features/event_details/event_detail_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/search/search_screen.dart';
+import '../features/venues/venue_detail_screen.dart';
 
 enum AppRoute {
   home('/'),
   signIn('/auth/sign-in'),
   register('/auth/register'),
-  verify('/auth/verify');
+  verify('/auth/verify'),
+  search('/search');
 
   const AppRoute(this.path);
 
   final String path;
+
+  static String event(String id) => '/events/$id';
+  static String venue(String id) => '/venues/$id';
 }
 
 class _SessionRefreshNotifier extends ChangeNotifier {
@@ -75,6 +82,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.verify.path,
         builder: (_, _) => const VerifyScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.search.path,
+        builder: (_, _) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/events/:id',
+        builder: (_, state) => EventDetailScreen(eventId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/venues/:id',
+        builder: (_, state) => VenueDetailScreen(venueId: state.pathParameters['id']!),
       ),
     ],
   );

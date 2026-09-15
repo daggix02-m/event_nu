@@ -13,6 +13,24 @@ class ApiClient {
 
   final Dio dio;
 
+  /// Returns the raw response body (e.g. `{"data": [...], "pagination": {...}}`)
+  /// so callers can decode pagination alongside the payload.
+  Future<Map<String, dynamic>> getEnvelope(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final response = await dio.get<dynamic>(path, queryParameters: queryParameters);
+      final body = response.data;
+      if (body is Map<String, dynamic>) return body;
+      throw const ApiException(code: 'bad_response', message: 'Unexpected response shape.');
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    } on ApiException {
+      rethrow;
+    }
+  }
+
   Future<dynamic> get(
     String path, {
     Map<String, dynamic>? queryParameters,
