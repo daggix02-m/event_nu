@@ -10,6 +10,7 @@ import '../features/engagement/my_rsvps_screen.dart';
 import '../features/engagement/notifications_screen.dart';
 import '../features/event_details/event_detail_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/moments/event_gallery_screen.dart';
 import '../features/saves/my_saves_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/tickets/my_tickets_screen.dart';
@@ -114,6 +115,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/events/:id',
         builder: (_, state) => EventDetailScreen(eventId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'gallery',
+            builder: (_, state) =>
+                EventGalleryScreen(eventId: state.pathParameters['id']!),
+          ),
+        ],
       ),
       GoRoute(
         path: '/venues/:id',

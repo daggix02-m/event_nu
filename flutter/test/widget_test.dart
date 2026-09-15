@@ -30,7 +30,7 @@ class _UnusedApiClient extends ApiClient {
   }
 
   @override
-  Future<dynamic> post(String path, {Object? data}) async {
+  Future<dynamic> post(String path, {Object? data, String? idempotencyKey}) async {
     throw UnimplementedError();
   }
 }

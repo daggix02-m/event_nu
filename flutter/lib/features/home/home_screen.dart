@@ -8,6 +8,7 @@ import '../../design/app_colors.dart';
 import '../discovery/discovery_providers.dart';
 import '../discovery/widgets/category_pills.dart';
 import '../discovery/widgets/event_feed.dart';
+import '../../shared/widgets/offline_banner.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -64,6 +65,7 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const OfflineBanner(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Text(

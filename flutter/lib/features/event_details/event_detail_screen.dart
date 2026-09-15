@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../design/app_colors.dart';
@@ -12,6 +13,7 @@ import '../discovery/discovery_providers.dart';
 import '../engagement/widgets/report_sheet.dart';
 import '../engagement/widgets/review_section.dart';
 import '../engagement/widgets/rsvp_button.dart';
+import '../moments/share_moment_sheet.dart';
 import '../social/widgets/comment_section.dart';
 import '../social/widgets/social_action_row.dart';
 import '../tickets/widgets/checkout_sheet.dart';
@@ -116,12 +118,34 @@ class _EventDetailBody extends StatelessWidget {
                   style: textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 24),
-                if (event.actionType.isNotEmpty)
-                  OutlinedButton.icon(
-                    onPressed: () => showCheckoutSheet(context, event.id),
-                    icon: const Icon(Icons.confirmation_number_outlined),
-                    label: const Text('Get tickets'),
-                  ),
+                Row(
+                  children: [
+                    if (event.actionType.isNotEmpty) ...[
+                      OutlinedButton.icon(
+                        onPressed: () => showCheckoutSheet(context, event.id),
+                        icon: const Icon(Icons.confirmation_number_outlined),
+                        label: const Text('Tickets'),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/events/${event.id}/gallery'),
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Gallery'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        builder: (_) => ShareMomentSheet(eventId: event.id),
+                      ),
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Share'),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
                 RsvpButton(eventId: event.id),
                 const SizedBox(height: 16),

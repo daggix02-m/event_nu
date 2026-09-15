@@ -48,9 +48,16 @@ class ApiClient {
   Future<dynamic> post(
     String path, {
     Object? data,
+    String? idempotencyKey,
   }) async {
     try {
-      final response = await dio.post<dynamic>(path, data: data);
+      final response = await dio.post<dynamic>(
+        path,
+        data: data,
+        options: idempotencyKey == null
+            ? null
+            : Options(headers: <String, dynamic>{'Idempotency-Key': idempotencyKey}),
+      );
       return ApiEnvelope.unwrap(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDio(e);

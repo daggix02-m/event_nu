@@ -24,7 +24,7 @@ class _UnusedApiClient extends ApiClient {
   @override
   Future<dynamic> patch(String path, {Object? data}) async => throw UnimplementedError();
   @override
-  Future<dynamic> post(String path, {Object? data}) async => throw UnimplementedError();
+  Future<dynamic> post(String path, {Object? data, String? idempotencyKey}) async => throw UnimplementedError();
 }
 
 class FakeEngagementRepository extends EngagementRepository {

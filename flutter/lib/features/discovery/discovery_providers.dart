@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../core/api/api_exception.dart';
 import '../../core/api/pagination.dart';
+import '../../core/sync/sync_engine.dart';
 import 'data/category.dart';
 import 'data/event.dart';
 import 'data/organizer.dart';
@@ -56,19 +58,35 @@ class FeedController extends AsyncNotifier<List<Event>> {
     final c = _categoryId;
     final f = _dateFrom;
     final t = _dateTo;
-    final page = await _repo.listEvents(
-      query: q,
-      categoryId: c,
-      dateFrom: f,
-      dateTo: t,
-      page: 1,
-      limit: limit,
-    );
-    if (_nextPageIs(q, c, f, t)) {
-      _hasNext = page.hasNext;
-      return page.items;
+    try {
+      final page = await _repo.listEvents(
+        query: q,
+        categoryId: c,
+        dateFrom: f,
+        dateTo: t,
+        page: 1,
+        limit: limit,
+      );
+      if (_nextPageIs(q, c, f, t)) {
+        _hasNext = page.hasNext;
+        return page.items;
+      }
+      return const [];
+    } on ApiException catch (e) {
+      if (e.code != 'network_error') rethrow;
+      return _cachedEvents();
     }
-    return const [];
+  }
+
+  Future<List<Event>> _cachedEvents() async {
+    final changes = await ref.read(syncStoreProvider).readChanges('events');
+    final events = changes
+        .where((c) => !c.isDelete && c.payload != null)
+        .map((c) => Event.fromJson(c.payload!))
+        .where((e) => e.isPublished)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return events;
   }
 
   bool _nextPageIs(String q, String? c, DateTime? f, DateTime? t) {
