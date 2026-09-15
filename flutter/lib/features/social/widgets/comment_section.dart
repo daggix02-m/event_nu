@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../design/app_colors.dart';
 import '../../../design/app_space.dart';
+import '../../engagement/widgets/report_sheet.dart';
 import '../../social/data/comment.dart';
 import '../../social/social_providers.dart';
 
@@ -80,13 +81,13 @@ class CommentSection extends ConsumerWidget {
   }
 }
 
-class CommentTile extends StatelessWidget {
+class CommentTile extends ConsumerWidget {
   const CommentTile({super.key, required this.comment});
 
   final Comment comment;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.sm),
@@ -109,6 +110,16 @@ class CommentTile extends StatelessWidget {
                 ),
                 Text(comment.body, style: textTheme.bodyMedium),
               ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.flag_outlined, size: 18, color: AppColors.onSurfaceVariant),
+            tooltip: 'Report comment',
+            onPressed: () => showReportSheet(
+              context,
+              entityType: 'comment',
+              entityId: comment.id,
+              subject: 'A comment',
             ),
           ),
         ],

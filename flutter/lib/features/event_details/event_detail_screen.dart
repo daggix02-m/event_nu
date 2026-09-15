@@ -9,6 +9,9 @@ import '../../shared/widgets/state_views.dart';
 import '../../shared/widgets/status_chip.dart';
 import '../discovery/data/event.dart';
 import '../discovery/discovery_providers.dart';
+import '../engagement/widgets/report_sheet.dart';
+import '../engagement/widgets/review_section.dart';
+import '../engagement/widgets/rsvp_button.dart';
 import '../social/widgets/comment_section.dart';
 import '../social/widgets/social_action_row.dart';
 import 'organizer_chip.dart';
@@ -23,7 +26,21 @@ class EventDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(eventDetailProvider(eventId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Event')),
+      appBar: AppBar(
+        title: const Text('Event'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag_outlined),
+            tooltip: 'Report',
+            onPressed: () => showReportSheet(
+              context,
+              entityType: 'event',
+              entityId: eventId,
+              subject: 'This event',
+            ),
+          ),
+        ],
+      ),
       body: value.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState(
@@ -98,6 +115,8 @@ class _EventDetailBody extends StatelessWidget {
                   style: textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 24),
+                RsvpButton(eventId: event.id),
+                const SizedBox(height: 16),
                 SocialActionRow(
                   eventId: event.id,
                   initialLiked: event.likedByMe,
@@ -106,6 +125,8 @@ class _EventDetailBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
                 CommentSection(eventId: event.id),
+                const SizedBox(height: 32),
+                ReviewSection(eventId: event.id),
                 const SizedBox(height: 48),
               ],
             ),

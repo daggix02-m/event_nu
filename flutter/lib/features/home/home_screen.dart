@@ -29,6 +29,16 @@ class HomeScreen extends ConsumerWidget {
         title: Text('Event Nu', style: textTheme.headlineSmall),
         actions: [
           IconButton(
+            icon: const Icon(Icons.notifications_none),
+            tooltip: 'Notifications',
+            onPressed: () => context.go(AppRoute.notifications.path),
+          ),
+          IconButton(
+            icon: const Icon(Icons.event_available_outlined),
+            tooltip: "Events I'm going to",
+            onPressed: () => context.go(AppRoute.myRsvps.path),
+          ),
+          IconButton(
             icon: const Icon(Icons.bookmark_outline),
             tooltip: 'My Saves',
             onPressed: () => context.go(AppRoute.saves.path),

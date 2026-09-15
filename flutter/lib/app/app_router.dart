@@ -6,6 +6,8 @@ import '../core/auth/session.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/sign_in_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
+import '../features/engagement/my_rsvps_screen.dart';
+import '../features/engagement/notifications_screen.dart';
 import '../features/event_details/event_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/saves/my_saves_screen.dart';
@@ -18,7 +20,9 @@ enum AppRoute {
   register('/auth/register'),
   verify('/auth/verify'),
   search('/search'),
-  saves('/saves');
+  saves('/saves'),
+  notifications('/notifications'),
+  myRsvps('/my-rsvps');
 
   const AppRoute(this.path);
 
@@ -92,6 +96,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.saves.path,
         builder: (_, _) => const MySavesScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.notifications.path,
+        builder: (_, _) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.myRsvps.path,
+        builder: (_, _) => const MyRsvpsScreen(),
       ),
       GoRoute(
         path: '/events/:id',
