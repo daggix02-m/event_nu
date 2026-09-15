@@ -40,7 +40,7 @@ register → login → profile → organizer application → admin approval → 
 
 ## 2. Phase Tracker (spec §23 / plan §4)
 
-Current phase: **phase 20 (badges & recaps) shipped 2026-09-15** — migration `00022_badges_recaps.sql` applied → DB v22: `user_badges` table (user FK CASCADE, badge_type CHECK 1..64, earned_at, metadata jsonb, UNIQUE(user_id,badge_type); RLS: SELECT own+privileged, write/delete privileged-only) + SECURITY DEFINER `award_badge` (milestone guard, exactly-once upsert), `event_recaps` table (event_id PK FK CASCADE, data jsonb, generated_at; RLS: SELECT published+privileged) + SECURITY DEFINER `event_recap_activity` (watermark over moments/reviews/sessions/rsvps) and `cache_event_recap` (upsert only for published/clean events). Milestones: first_rsvp (RsvpService.Create), first_ticket (OrderService.ConfirmPaid), first_attended (CheckIn + ReviewService.Create; ticket 'used' OR confirmed/attended RSVP on an event already started), first_moment (MomentService.Create). API surface: `GET /users/me/badges` (protected), `GET /events/{id}/recap` (public; cached via watermark, regenerates when activity newer than generated_at; moment_count/top_moments/attendee_count/review_count/review_average/session_count/session_highlights/generated_at/cached). Repo tests (milestone guard + exactly-once, first-attended proxy/timing, aggregate+watermark, hidden event) and handler tests (badge lifecycle via API, recap public+cache+regenerate) pass. Next: Phase 21 (per roadmap).
+Current status: **Go backend API complete** — all backend phase-lots `00`–`20` shipped on `main` (see index `~/.local/share/opencode/plans/README.md`; schema at migration `00022` → DB v22). Now building the **Flutter app** (phase-21 foundation in progress). Remaining backend work is the §5 production go-live checklist, not feature code.
 
 | Phase | Area | Status |
 |---|---|---|
@@ -50,27 +50,26 @@ Current phase: **phase 20 (badges & recaps) shipped 2026-09-15** — migration `
 | 3 | Go API foundation | **done** — healthz/readyz, middleware, server |
 | 4 | Authentication | **done** — register/login/refresh/logout + /me; email welcome+verify (outbox+worker) |
 | 5 | RLS context | **done** — base framework + policies on users/auth_sessions/magic_link_tokens/email_*; cross-user reads blocked (proven) |
-| 6 | Flutter offline foundation | not started |
-| 7 | Users and profiles | **done** (auth slice covers /me) |
-| 8 | Organizer applications | **done** — apply + admin approve/reject |
-| 9 | Venues and categories | **done** — venue create/list, categories seeded |
-| 10 | Events/posts + lifecycle | **done** — create/edit/publish, draft→published visibility |
-| 11 | Media (R2) | not started |
-| 12 | Discovery/search | not started |
-| 13 | Social | not started |
-| 14 | RSVP | not started |
-| 15 | Tickets + orders + payments | **partial** — tickets & orders done (phase 14, 2026-09-10); Chapa payments/webhooks pending (phase 15) |
-| 16 | Reviews/ratings | not started |
-| 17 | Reporting + moderation | not started |
-| 18 | Notifications + reminders | **done** — inbox/hooks/reminders (phase 12d) + FCM push dispatch backend (phase 17, DB v19); Flutter UI + APNs planned (phase 24/25) |
-| 19 | Next.js admin | not started |
-| 20 | Prisma + admin RLS | not started |
-| 21 | Full offline sync | **done** (2026-09-11) — backend delta endpoint shipped (phase 16, DB v18); Flutter consumer planned (phase 26) |
-| 22 | Production hardening | not started |
-| 23 | Testing (all layers) | partial — auth matrix + middleware + service done |
-| 24 | Production deployment | not started |
+| 6 | Users and profiles | **done** — users/profile via auth slice + PATCH /users/me (phase-12a); Flutter offline foundation is a Flutter-phase item |
+| 7 | Organizer applications | **done** — apply + admin approve/reject |
+| 8 | Venues and categories | **done** — venue create/list/patch/detail, categories seeded (phase-09); sync venues/categories delta (phase-16) |
+| 9 | Events/posts + lifecycle | **done** — create/edit/publish, draft→published visibility, date-window search (phases 10, 12d) |
+| 10 | Media (R2) | **done** — upload/presigned/complete, variants, worker, CDN URL, cleanup (phase-13, DB v15); Flutter capture UI is phase-27 |
+| 11 | Discovery/search | **done** — FTS search filters (title/desc/venue/organizer), pagination, date-window (phase-12d) |
+| 12 | Social | **done** — comments+likes (12a), saves+folders+shares+follows (12b) |
+| 13 | RSVP | **done** — atomic capacity registration, public directory (phases 12c, 18) |
+| 14 | Tickets + orders + payments | **done** — tiers/orders/QR check-in (phase-14, DB v16); Chapa payments + webhooks (phase-15, DB v17) |
+| 15 | Reviews/ratings | **done** — eligibility + duplicate rule + rating (phase-12c) |
+| 16 | Reporting + moderation | **done** — event/user/venue reports + moderation status (phase-12c), admin moderation endpoints (phase-12d) |
+| 17 | Notifications + reminders | **done** — inbox/hooks/reminders (phase 12d) + FCM push dispatch backend (phase 17, DB v19); Flutter UI + APNs planned (phases 24/25) |
+| 18 | Offline sync | **done** — cursor delta endpoint `GET /sync` (phase-16, DB v18); Flutter SQLite consumer planned (phase 26) |
+| 19 | Schedules + Q&A | **done** — organizer schedule CRUD, audience questions/upvotes/pin/answer (phase-19, DB v21) |
+| 20 | Badges + recaps | **done** — milestone awards, cached event recaps (phase-20, DB v22) |
+| 21 | Next.js admin | not started — separate admin app (Flutter must not touch Prisma/Neon) |
+| 22 | Prisma + admin RLS | not started — admin-channel concern |
+| 23 | Production hardening | **done** — `plans/phase-00…11` shipped on `main` (baseline, CI gates, auth quick wins, refresh atomicity, approval atomicity, rate limiting, admin recheck, pagination, idempotency, validation+metrics, worker reliability, final security audit). Remaining = go-live checklist §5 |
+| 24 | Production deployment | not started — §5 go-live checklist: Neon prod, Brevo templates 6/8 + SMTP relay 403, R2/CDN prod, admin app |
 | 24a | Config fail-fast + backend README | **done** — `6801c2f` (2026-09-02) |
-| 25–29 | Hardening / observability / deploy / verify | **done** — security hardening `plans/phase-00…11` completed on `main` (all phases shipped: baseline, CI gates, auth quick wins, refresh atomicity, approval atomicity, rate limiting, admin recheck, pagination, idempotency, validation+metrics, worker reliability, final audit; see Testing Log rows 25–29). Next per plan: deploy + verify. |
 
 ---
 
@@ -152,7 +151,9 @@ Schedule & Q&A (**phase-19**, 2026-09-14) | **done** | Migration `00021_schedule
 
 Badges & recaps (**phase-20**, 2026-09-15) | **done** | Migration `00022_badges_recaps.sql` applied → DB v22: `user_badges` (user FK CASCADE, badge_type CHECK 1..64, earned_at, metadata jsonb, UNIQUE(user_id,badge_type); RLS SELECT own+privileged, write/delete privileged-only) + SECURITY DEFINER `award_badge` (milestone guard + exactly-once `ON CONFLICT DO NOTHING`), `event_recaps` (event_id PK FK CASCADE, data jsonb, generated_at; RLS SELECT published+privileged) + SECURITY DEFINER `event_recap_activity` (watermark = GREATEST over moments created_at / reviews / sessions / rsvps updated_at, epoch floor) and `cache_event_recap` (upsert only for published/clean events). Milestones: `first_rsvp` (RsvpService.Create), `first_ticket` (OrderService.ConfirmPaid), `first_attended` (CheckIn + ReviewService.Create; ticket 'used' OR confirmed/attended RSVP joined to an event with starts_at ≤ now()), `first_moment` (MomentService.Create) — all best-effort via nil-safe `SetBadges(BadgeAwarder)`, non-blocking. API: `GET /users/me/badges` (protected, own only), `GET /events/{id}/recap` (public; served from cache when `generated_at ≥ activity`, regenerates otherwise; moment_count/top_moments/attendee_count/review_count/review_average/session_count/session_highlights/generated_at/cached). Tests: 5 repo DB-backed (milestone guard + exactly-once, first-attended via review proxy, first-attended not-before-start, aggregate + cache watermarks, hidden event blocked) + 2 handler e2e (badge lifecycle through API, recap public + cached + regenerate after session add). Note: test-shape gotcha — all JSON responses are `{"data": ...}`-wrapped by `shared.WriteJSON`, so integration tests must decode the envelope. Gate: gofmt CLEAN · build PASS · vet PASS · `go test -race -count=1 ./internal/repository/` PASS · `go test -count=1 -skip 'TestSearchAdminVenue|TestPaginationEventsStableOrder' ./internal/api/handlers/` PASS · golangci-lint **BLOCKED** (not installed)
 
-**Last gate run (2026-09-15, after phase-20):** gofmt CLEAN · build PASS · vet PASS · `go test -race -count=1 ./internal/repository/` PASS (incl. Phase 20 tests) · `go test -count=1 -skip 'TestSearchAdminVenue|TestPaginationEventsStableOrder' ./internal/api/handlers/` PASS (81.6s; Phase 20 handler tests included) · DB at v22 · 2 pre-existing flaky tests (shared-DB state drift) · golangci-lint **BLOCKED** (not installed)
+Backend wrap-up (**phase-20b**, 2026-09-15) | **done** | `backend/.env.example` (all config vars documented; BREVO note) + gitignored `backend/.env` (dev secrets). golangci-lint v1.64.8 installed; `backend/.golangci.yml` (errcheck suppressed in `_test.go`; production errcheck fixed rather than excluded). `Makefile`: `lint` target, `ci` timeout 20m→30m (shared-DB slowness). `.github/workflows/ci.yml` lint step added. Dead code removed: `mediaStore` interface (`media.go`), `responseRecorder`+`WriteHeader` (`helpers.go`). S1039 `fmt.Sprintf` literal (`payments_webhook_test.go:293`). Deferred `tx.Rollback` wrapped in 7 production files (`order.go`×4, `outbox.go`×2, `emailcode.go`×1). **Flaky-test fixes**: (1) `events.description`/`price_display`/`action_target` nullable → `COALESCE(...,'')` in `event.go` `eventColumns`+`eventColumnsQualified`; (2) category-filter page-1 drift → `&limit=100` in `notifications_reminders_venue_admin_test.go`; (3) `TestReports` venue-name page-1 drift → renamed test venue to `"Aaa Aaa …"` (sorts before `"Aaa Far"` alphabetically). All 3 tests now PASS deterministically. Gate: gofmt CLEAN · build PASS · vet PASS · `go test -race -p 1 -count=1 -timeout 30m ./...` PASS (all 17 packages, handlers 1111s on accumulated shared DB) · golangci-lint PASS (0 findings)
+
+**Last gate run (2026-09-15, after phase-20b):** gofmt CLEAN · build PASS · vet PASS · `go test -race -p 1 -count=1 -timeout 30m ./...` PASS (all 17 packages, handlers 1111s — accumulated shared dev DB) · golangci-lint v1.64.8 PASS (0 findings) · 0 flaky tests remaining · DB at v22
 
 ---
 
