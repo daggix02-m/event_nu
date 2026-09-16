@@ -200,8 +200,15 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
     expect(find.textContaining('Discover'), findsOneWidget);
-    expect(find.text('Flutter Conf 2026'), findsOneWidget);
-    expect(find.text('Workshop: SwiftUI'), findsOneWidget);
+    expect(find.text('Flutter Conf 2026'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('Workshop: SwiftUI'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(find.text('Workshop: SwiftUI'), findsWidgets);
     expect(find.text('Free'), findsWidgets);
     expect(find.text('500 ETB'), findsWidgets);
     expect(find.text('All'), findsOneWidget);
@@ -211,7 +218,7 @@ void main() {
   testWidgets('EventCard navigates to event detail screen', (tester) async {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Flutter Conf 2026'));
+    await tester.tap(find.text('Flutter Conf 2026').first);
     await tester.pumpAndSettle();
     expect(find.text('About'), findsOneWidget);
     expect(find.text('Venue'), findsNothing); // venueId is null

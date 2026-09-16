@@ -29,6 +29,13 @@ class SessionController extends AsyncNotifier<AuthState> {
   AuthRepository get _repository => ref.read(authRepositoryProvider);
   TokenStorage get _storage => ref.read(tokenStorageProvider);
 
+  bool _bootstrapped = false;
+
+  /// True once [restore] has finished, i.e. the initial session restore has
+  /// concluded. Used by the router to show a branded splash before the first
+  /// decision about the destination screen.
+  bool get bootstrapped => _bootstrapped;
+
   @override
   Future<AuthState> build() async {
     return const AuthStateUnknown();
@@ -38,13 +45,16 @@ class SessionController extends AsyncNotifier<AuthState> {
     state = const AsyncLoading();
     final access = await _storage.read(TokenKeys.accessToken);
     if (access == null || access.isEmpty) {
+      _bootstrapped = true;
       state = const AsyncData(AuthStateUnauthenticated());
       return;
     }
     try {
       final user = await _repository.fetchMe();
+      _bootstrapped = true;
       state = AsyncData(AuthStateAuthenticated(user: user));
     } on ApiException catch (e) {
+      _bootstrapped = true;
       if (e.isUnauthorized) {
         state = const AsyncData(AuthStateUnauthenticated());
         await clearSession();

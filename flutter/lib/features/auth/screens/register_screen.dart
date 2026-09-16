@@ -5,7 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../app/app_router.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/auth/session.dart';
+import '../../../design/app_colors.dart';
 import '../../../design/app_space.dart';
+import '../../../shared/validation/form_errors.dart';
+import '../../../shared/widgets/password_strength_meter.dart';
+import '../../../shared/widgets/wizard_scaffold.dart';
+import '../registration_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -15,13 +20,15 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _username = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
-  var _submitting = false;
+
   var _obscure = true;
+  var _submitting = false;
+  var _confirmTouched = false;
+  FieldErrors? _serverErrors;
 
   @override
   void dispose() {
@@ -32,26 +39,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  void _onChange(void Function(RegistrationController c) update) {
+    setState(() => _serverErrors = null);
+    update(ref.read(registrationControllerProvider.notifier));
+  }
+
   Future<void> _submit() async {
-    if (_submitting || !(_formKey.currentState?.validate() ?? false)) return;
+    final controller = ref.read(registrationControllerProvider.notifier);
+    if (_submitting || controller.validatePassword() != null) return;
+    if (_confirm.text != controller.password) {
+      setState(() => _confirmTouched = true);
+      return;
+    }
     setState(() => _submitting = true);
     try {
       await ref.read(sessionControllerProvider.notifier).register(
-            email: _email.text.trim(),
-            password: _password.text,
-            username: _username.text.trim(),
+            email: controller.email,
+            password: controller.password,
+            username: controller.username,
           );
-      final current = ref.read(sessionControllerProvider).value;
-      final user = switch (current) {
-        AuthStateAuthenticated(:final user) => user,
-        _ => null,
-      };
-      if (!mounted) return;
-      context.go(user != null && !user.isVerified ? AppRoute.verify.path : AppRoute.home.path);
+      // The router redirects to verify (unverified) or home (verified).
     } on ApiException catch (e) {
+      if (mounted) setState(() => _serverErrors = mapServerFormError(e));
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
+        setState(() => _serverErrors = const FieldErrors(
+          form: 'Something went wrong. Please try again later.',
+        ));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -60,84 +74,170 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.marginMobile),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Create account', style: textTheme.headlineLarge),
-                    const SizedBox(height: AppSpace.xl),
-                    TextFormField(
-                      controller: _username,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Username'),
-                      validator: (v) => (v == null || v.trim().length < 2)
-                          ? 'Username must be at least 2 characters'
-                          : null,
-                    ),
-                    const SizedBox(height: AppSpace.md),
-                    TextFormField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      validator: (v) => (v == null || v.isEmpty || !v.contains('@'))
-                          ? 'Enter a valid email'
-                          : null,
-                    ),
-                    const SizedBox(height: AppSpace.md),
-                    TextFormField(
-                      controller: _password,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure ? Icons.visibility_off : Icons.visibility_outlined,
-                          ),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                      ),
-                      validator: (v) => (v == null || v.length < 8)
-                          ? 'Password must be at least 8 characters'
-                          : null,
-                    ),
-                    const SizedBox(height: AppSpace.md),
-                    TextFormField(
-                      controller: _confirm,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: const InputDecoration(labelText: 'Confirm password'),
-                      validator: (v) => (v != _password.text) ? 'Passwords do not match' : null,
-                    ),
-                    const SizedBox(height: AppSpace.lg),
-                    FilledButton(
-                      onPressed: _submitting ? null : _submit,
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Register'),
-                    ),
-                  ],
-                ),
-              ),
+    final controller = ref.read(registrationControllerProvider.notifier);
+    final draft = ref.watch(registrationControllerProvider);
+    final step = draft.step;
+
+    return WizardScaffold(
+      index: step,
+      count: 2,
+      title: 'Join the Addis Radar',
+      subtitle: 'Your weekend, mapped. Create an account to never miss what\u2019s popping.',
+      onBack: step > 0 ? controller.back : null,
+      content: step == 0
+          ? _buildAccountDetails(controller)
+          : _buildPassword(controller, draft),
+      footer: step == 0
+          ? _buildAccountFooter(controller)
+          : _buildPasswordFooter(),
+    );
+  }
+
+  Widget _buildAccountDetails(RegistrationController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _username,
+          textInputAction: TextInputAction.next,
+          autocorrect: false,
+          enableSuggestions: false,
+          decoration: InputDecoration(
+            labelText: 'Handle',
+            helperText: '3\u201332 characters \u00b7 unique across Event Nu',
+            errorText: _serverErrors?.username ?? controller.validateUsername(),
+          ),
+          onChanged: (v) => _onChange((c) => c.setUsername(v)),
+        ),
+        const SizedBox(height: AppSpace.sm),
+        TextFormField(
+          controller: _email,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          enableSuggestions: false,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(
+            labelText: 'Email',
+            helperText: 'A 6-digit code is sent here to verify your account.',
+            errorText: _serverErrors?.email ?? controller.validateEmail(),
+          ),
+          onChanged: (v) => _onChange((c) => c.setEmail(v)),
+        ),
+        if (_serverErrors?.form != null) ...[
+          const SizedBox(height: AppSpace.sm),
+          _FormError(message: _serverErrors!.form!),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPassword(RegistrationController controller, RegistrationDraft draft) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _password,
+          obscureText: _obscure,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            errorText:
+                _serverErrors?.password ?? controller.validatePassword(),
+            suffixIcon: IconButton(
+              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility_outlined),
+              onPressed: () => setState(() => _obscure = !_obscure),
             ),
           ),
+          onChanged: (v) => _onChange((c) => c.setPassword(v)),
         ),
+        const SizedBox(height: AppSpace.xs),
+        PasswordStrengthMeter(password: draft.password),
+        const SizedBox(height: AppSpace.md),
+        TextFormField(
+          controller: _confirm,
+          obscureText: _obscure,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _submit(),
+          decoration: InputDecoration(
+            labelText: 'Confirm password',
+            errorText: _confirmTouched && _confirm.text != draft.password
+                ? 'Passwords do not match'
+                : null,
+          ),
+          onChanged: (_) {
+            if (!_confirmTouched) setState(() => _confirmTouched = true);
+          },
+        ),
+        if (_serverErrors?.form != null) ...[
+          const SizedBox(height: AppSpace.sm),
+          _FormError(message: _serverErrors!.form!),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAccountFooter(RegistrationController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton(
+          onPressed: controller.canProceedStep0 ? controller.next : null,
+          child: const Text('Continue'),
+        ),
+        const SizedBox(height: AppSpace.xs),
+        TextButton(
+          onPressed: () => context.go(AppRoute.signIn.path),
+          child: const Text('Have an account? Sign in'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordFooter() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create account'),
+        ),
+        const SizedBox(height: AppSpace.xs),
+        TextButton(
+          onPressed: _submitting
+              ? null
+              : () => ref.read(registrationControllerProvider.notifier).back(),
+          child: const Text('Back'),
+        ),
+      ],
+    );
+  }
+}
+
+class _FormError extends StatelessWidget {
+  const _FormError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpace.sm),
+      decoration: BoxDecoration(
+        color: AppColors.errorContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        message,
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: AppColors.onErrorContainer),
       ),
     );
   }

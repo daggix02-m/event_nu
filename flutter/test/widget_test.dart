@@ -10,6 +10,7 @@ import 'package:event_nu/core/api/api_client.dart';
 import 'package:event_nu/core/storage/token_storage.dart';
 import 'package:event_nu/features/auth/auth_repository.dart';
 import 'package:event_nu/features/auth/data/user.dart';
+import 'package:event_nu/features/splash/splash_screen.dart';
 
 class _UnusedApiClient extends ApiClient {
   _UnusedApiClient() : super(dio: Dio());
@@ -63,40 +64,76 @@ class FakeAuthRepository extends AuthRepository {
   }) async {}
 }
 
+_Widget _app({InMemoryTokenStorage? storage, FakeAuthRepository? auth}) {
+  return _Widget(storage: storage, auth: auth);
+}
+
+class _Widget extends StatelessWidget {
+  const _Widget({this.storage, this.auth});
+
+  final InMemoryTokenStorage? storage;
+  final FakeAuthRepository? auth;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        tokenStorageProvider.overrideWithValue(storage ?? InMemoryTokenStorage()),
+        authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
+      ],
+      child: const EventNuApp(),
+    );
+  }
+}
+
 void main() {
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  testWidgets('unauthenticated user is redirected to sign-in', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
-          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-        ],
-        child: const EventNuApp(),
-      ),
-    );
+  testWidgets('shows the branded splash during bootstrap', (tester) async {
+    await tester.pumpWidget(_app());
+    expect(find.byType(SplashScreen), findsOneWidget);
+
+    await tester.pumpAndSettle();
+    expect(find.byType(SplashScreen), findsNothing);
+  });
+
+  testWidgets('unauthenticated user lands on home (home-first)', (tester) async {
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Discover'), findsWidgets);
+    expect(find.text('Sign in'), findsNothing);
+  });
+
+  testWidgets('unauthenticated user is sent to sign-in on a protected route', (tester) async {
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.confirmation_number_outlined));
     await tester.pumpAndSettle();
 
     expect(find.text('Sign in'), findsWidgets);
-    expect(find.byType(TextFormField), findsNWidgets(2));
+  });
+
+  testWidgets('unverified user is redirected to the verify screen', (tester) async {
+    final auth = FakeAuthRepository();
+    auth.user = auth.user.copyWith(isVerified: false);
+    final storage = InMemoryTokenStorage();
+    await storage.write(TokenKeys.accessToken, 'access');
+
+    await tester.pumpWidget(_app(storage: storage, auth: auth));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Check your inbox'), findsOneWidget);
   });
 
   testWidgets('authenticated verified user lands on home', (tester) async {
     final storage = InMemoryTokenStorage();
     await storage.write(TokenKeys.accessToken, 'access');
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          tokenStorageProvider.overrideWithValue(storage),
-          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-        ],
-        child: const EventNuApp(),
-      ),
-    );
+    await tester.pumpWidget(_app(storage: storage));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Discover'), findsWidgets);

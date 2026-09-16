@@ -3,33 +3,77 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../design/app_colors.dart';
+import '../../../design/app_space.dart';
 import '../../../shared/widgets/state_views.dart';
-import '../data/event.dart';
+import '../data/category.dart';
 import '../discovery_providers.dart';
 import 'event_card.dart';
 
-/// Renders the discovery feed: skeleton on load, empty/error states, and the
-/// infinitely-scrolling card list with pull-to-refresh.
+/// Renders the discovery feed — the home timeline.
+///
+/// [headers] are rendered as the first items (the hero, stories rail, category
+/// pills, host banner…). Headers and cards bleed edge-to-edge while each
+/// header manages its own horizontal padding; the list carries bottom padding
+/// equal to [AppSpace.bottomNavClearance] so content can scroll clear of the
+/// floating pill nav.
 class EventFeed extends ConsumerWidget {
-  const EventFeed({super.key});
+  const EventFeed({super.key, this.headers = const []});
+
+  final List<Widget> headers;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(feedControllerProvider);
-    return feed.when(
+    final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
+    final categoryNames = <String, String>{
+      for (final c in categories) c.id: c.name,
+    };
+
+    final children = feed.when(
       skipLoadingOnRefresh: true,
-      loading: () => const _SkeletonList(),
-      error: (error, _) => ErrorState(
-        message: _friendlyMessage(error),
-        onRetry: () => ref.invalidate(feedControllerProvider),
-      ),
+      loading: () => [
+        ...headers,
+        ..._skeletons(),
+      ],
+      error: (error, _) => [
+        ...headers,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutterMobile),
+          child: ErrorState(
+            message: _friendlyMessage(error),
+            onRetry: () => ref.invalidate(feedControllerProvider),
+          ),
+        ),
+      ],
       data: (events) => events.isEmpty
-          ? const EmptyState(
-              icon: Icons.search_off,
-              title: 'No events found',
-              message: 'Try widening your search or clearing filters.',
-            )
-          : _EventList(events: events),
+          ? [
+              ...headers,
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpace.gutterMobile),
+                child: EmptyState(
+                  icon: Icons.search_off,
+                  title: 'No events found',
+                  message: 'Try widening your search or clearing filters.',
+                ),
+              ),
+            ]
+          : [
+              ...headers,
+              for (final e in events) EventCard(event: e, categoryName: categoryNames[e.categoryId]),
+            ],
+    );
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.extentAfter < 500) {
+          ref.read(feedControllerProvider.notifier).loadMore();
+        }
+        return true;
+      },
+      child: RefreshIndicator(
+        onRefresh: () => ref.refresh(feedControllerProvider.future),
+        child: _FeedList(children: children),
+      ),
     );
   }
 
@@ -44,102 +88,85 @@ class EventFeed extends ConsumerWidget {
   }
 }
 
-class _EventList extends ConsumerStatefulWidget {
-  const _EventList({required this.events});
+class _FeedList extends StatelessWidget {
+  const _FeedList({required this.children});
 
-  final List<Event> events;
-
-  @override
-  ConsumerState<_EventList> createState() => _EventListState();
-}
-
-class _EventListState extends ConsumerState<_EventList> {
-  static const _threshold = 500.0;
-
-  bool _onScrollNotification(ScrollNotification notification) {
-    if (notification.metrics.extentAfter < _threshold) {
-      ref.read(feedControllerProvider.notifier).loadMore();
-    }
-    return true;
-  }
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(feedControllerProvider);
-    final hasNext = ref.read(feedControllerProvider.notifier).hasMore;
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScrollNotification,
-      child: RefreshIndicator(
-        onRefresh: () => ref.refresh(feedControllerProvider.future),
-        child: ListView.separated(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          itemCount: widget.events.length + 1,
-          separatorBuilder: (_, index) => SizedBox(height: index < widget.events.length ? 12 : 0),
-          itemBuilder: (context, index) {
-            if (index < widget.events.length) {
-              return EventCard(event: widget.events[index]);
-            }
-            if (!hasNext) return const SizedBox.shrink();
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.neon),
-                ),
-              ),
-            );
-          },
-        ),
+    final items = <Widget>[];
+    for (final child in children) {
+      if (items.isNotEmpty) items.add(const SizedBox(height: 12));
+      items.add(child);
+    }
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        0,
+        AppSpace.xs,
+        0,
+        AppSpace.bottomNavClearance,
       ),
+      children: items,
     );
   }
 }
 
-class _SkeletonList extends StatelessWidget {
-  const _SkeletonList();
+List<Widget> _skeletons() {
+  return List.generate(3, (index) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpace.gutterMobile),
+      child: _SkeletonCard(),
+    );
+  });
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard();
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-      itemCount: 5,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (_, _) => Container(
-        height: 112,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainer,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(children: [
+    return Container(
+      height: 300,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
-            width: 112,
+            height: 190,
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(width: 180, height: 14, decoration: _bar()),
-                const Spacer(),
-                Container(width: 120, height: 12, decoration: _bar()),
+                _bar(context, width: 220, height: 16),
+                const SizedBox(height: 12),
+                _bar(context, width: 140, height: 12),
               ],
             ),
           ),
-        ]),
+        ],
       ),
     );
   }
 
-  BoxDecoration _bar() => BoxDecoration(
+  Widget _bar(BuildContext context, {required double width, required double height}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
         color: AppColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(6),
-      );
+      ),
+    );
+  }
 }

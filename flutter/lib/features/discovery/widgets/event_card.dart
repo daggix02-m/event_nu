@@ -5,45 +5,73 @@ import 'package:go_router/go_router.dart';
 import '../../../app/app_router.dart';
 import '../../../design/app_colors.dart';
 import '../../../design/app_space.dart';
-import '../../../shared/widgets/status_chip.dart';
 import '../data/event.dart';
 
+/// Magazine-style feed card: full-bleed poster with a bottom-to-top gradient,
+/// frosted meta chips, and a bold Space-Grotesk headline.
 class EventCard extends StatelessWidget {
-  const EventCard({super.key, required this.event});
+  const EventCard({super.key, required this.event, this.categoryName});
 
   final Event event;
+  final String? categoryName;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Material(
-      color: AppColors.surfaceContainer,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go(AppRoute.event(event.id)),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.sm),
-          child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutterMobile),
+      child: Material(
+        key: ValueKey('magazine-card-${event.id}'),
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.go(AppRoute.event(event.id)),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 112,
-                  height: 96,
-                  child: event.posterUrl == null
-                      ? _PosterPlaceholder()
-                      : CachedNetworkImage(
-                          imageUrl: event.posterUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) => _PosterPlaceholder(showIcon: false),
-                          errorWidget: (_, _, _) => const _PosterPlaceholder(),
+              SizedBox(
+                height: 190,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _media(),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: [0, 0.5, 1],
+                          colors: [
+                            Colors.transparent,
+                            Color(0x66141217),
+                            Color(0xEE141217),
+                          ],
                         ),
+                      ),
+                    ),
+                    if (categoryName != null)
+                      Positioned(
+                        top: AppSpace.sm,
+                        left: AppSpace.sm,
+                        child: _FrostChip(label: categoryName!),
+                      ),
+                    Positioned(
+                      right: AppSpace.sm,
+                      bottom: AppSpace.sm,
+                      child: _FrostChip(label: event.priceLabel, accent: event.priceIsFree),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: AppSpace.sm),
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.md,
+                  AppSpace.sm,
+                  AppSpace.md,
+                  AppSpace.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -51,28 +79,29 @@ class EventCard extends StatelessWidget {
                       event.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleMedium,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpace.xs),
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 13, color: AppColors.onSurfaceVariant),
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
                             event.whenLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        StatusChip(label: event.priceLabel),
-                        const Spacer(),
                         if (event.likeCount > 0) ...[
                           const Icon(Icons.favorite_border, size: 15, color: AppColors.neon),
                           const SizedBox(width: 3),
@@ -92,21 +121,53 @@ class EventCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _media() {
+    final url = event.posterUrl ?? event.teaserUrl;
+    if (url == null) {
+      return Container(
+        color: AppColors.surfaceContainerHigh,
+        child: const Center(
+          child: Icon(Icons.local_activity, color: AppColors.neon, size: 34),
+        ),
+      );
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, _) => Container(color: AppColors.surfaceContainerHigh),
+      errorWidget: (_, _, _) => Container(
+        color: AppColors.surfaceContainerHigh,
+        child: const Center(
+          child: Icon(Icons.local_activity, color: AppColors.neon, size: 34),
+        ),
+      ),
+    );
+  }
 }
 
-class _PosterPlaceholder extends StatelessWidget {
-  const _PosterPlaceholder({this.showIcon = true});
+class _FrostChip extends StatelessWidget {
+  const _FrostChip({required this.label, this.accent = false});
 
-  final bool showIcon;
+  final String label;
+  final bool accent;
 
   @override
   Widget build(BuildContext context) {
+    final color = accent ? AppColors.secondary : AppColors.onSurface;
     return Container(
-      color: AppColors.surfaceContainerHigh,
-      child: Center(
-        child: showIcon
-            ? const Icon(Icons.local_activity, color: AppColors.neon, size: 28)
-            : const SizedBox.shrink(),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xB33B383E),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x4719E3FF)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }

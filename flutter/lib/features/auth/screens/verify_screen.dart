@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,12 +19,9 @@ class VerifyScreen extends ConsumerStatefulWidget {
 class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   final _code = TextEditingController();
   var _submitting = false;
-  var _secondsLeft = 0;
-  Timer? _resendTimer;
 
   @override
   void dispose() {
-    _resendTimer?.cancel();
     _code.dispose();
     super.dispose();
   }
@@ -47,23 +42,6 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
-  }
-
-  void _startResendCountdown() {
-    setState(() => _secondsLeft = 60);
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_secondsLeft <= 1) {
-        timer.cancel();
-        setState(() => _secondsLeft = 0);
-      } else {
-        setState(() => _secondsLeft -= 1);
-      }
-    });
   }
 
   @override
@@ -135,17 +113,13 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                         : const Text('Verify'),
                   ),
                   const SizedBox(height: AppSpace.sm),
-                  if (_secondsLeft > 0)
-                    Text(
-                      'Resend code in ${_secondsLeft}s',
-                      textAlign: TextAlign.center,
-                      style: textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
-                    )
-                  else
-                    TextButton(
-                      onPressed: _startResendCountdown,
-                      child: const Text('Resend code'),
+                  Text(
+                    'No code yet? A fresh one is issued automatically the next time you sign in. If this keeps happening, reach out to support.',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
+                  ),
                 ],
               ),
             ),
