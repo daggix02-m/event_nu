@@ -70,6 +70,17 @@ class SavedEvent {
 
   bool get isVisible => summary?.isVisible ?? false;
 
+  SavedEvent copyWith({Object? folderId = _sentinel}) {
+    return SavedEvent(
+      eventId: eventId,
+      folderId: folderId == _sentinel ? this.folderId : folderId as String?,
+      createdAt: createdAt,
+      summary: summary,
+    );
+  }
+
+  static const _sentinel = Object();
+
   factory SavedEvent.fromJson(Map<String, dynamic> json) {
     final summary = json.object('event');
     return SavedEvent(

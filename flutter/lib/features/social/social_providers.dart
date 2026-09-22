@@ -80,6 +80,14 @@ class MySavesController extends AsyncNotifier<List<SavedEvent>> {
     );
   }
 
+  Future<void> moveToFolder(String eventId, String? folderId) async {
+    await _repo.setSave(eventId, true, folderId: folderId);
+    state = AsyncData([
+      for (final save in state.value ?? const <SavedEvent>[])
+        if (save.eventId == eventId) save.copyWith(folderId: folderId) else save,
+    ]);
+  }
+
   Future<void> loadMore() async {
     if (!_hasNext || _loadingTail) return;
     _loadingTail = true;

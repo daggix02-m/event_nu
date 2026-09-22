@@ -49,4 +49,35 @@ class SocialRepository {
     );
     return Paginated.fromJson(envelope, parseItem: SavedEvent.fromJson);
   }
+
+  // ---- save folders --------------------------------------------------------
+
+  Future<List<SaveFolder>> mySaveFolders() async {
+    final data = await _api.get('/api/v1/me/save-folders');
+    if (data is! List) return const [];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(SaveFolder.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<SaveFolder> createSaveFolder(String name) async {
+    final data = await _api.post(
+      '/api/v1/me/save-folders',
+      data: <String, dynamic>{'name': name},
+    );
+    return SaveFolder.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<SaveFolder> renameSaveFolder(String id, String name) async {
+    final data = await _api.patch(
+      '/api/v1/me/save-folders/$id',
+      data: <String, dynamic>{'name': name},
+    );
+    return SaveFolder.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteSaveFolder(String id) async {
+    await _api.delete('/api/v1/me/save-folders/$id');
+  }
 }
