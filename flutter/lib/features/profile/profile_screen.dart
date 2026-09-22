@@ -1,54 +1,33 @@
 import 'package:flutter/material.dart';
 
-import '../../design/app_colors.dart';
-import '../../design/app_space.dart';
+import 'widgets/profile_identity_card.dart';
+import 'widgets/profile_stats_row.dart';
+import 'widgets/profile_tabs.dart';
 
-/// Minimal profile shell — full profile surfaces are still heating up.
+/// Profile home: identity card, summary stats and tabbed history
+/// (Going / Saved / Tickets / Badges).
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Your profile')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.secondary, AppColors.primaryContainer],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.person_outline,
-                    size: 48,
-                    color: AppColors.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.lg),
-                Text('Make it yours', style: textTheme.headlineMedium),
-                const SizedBox(height: AppSpace.sm),
-                Text(
-                  'Your likes, saves, tickets and moments will live here '
-                  'soon.',
-                  textAlign: TextAlign.center,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Your profile')),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: const [
+                  ProfileIdentityCard(),
+                  ProfileStatsRow(),
+                  ProfileTabBar(),
+                  Expanded(child: ProfileTabViews()),
+                ],
+              ),
             ),
           ),
         ),
