@@ -228,13 +228,26 @@ void main() {
     await tester.pumpWidget(await _app(events: [_event('e-1')]));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('home-stories')),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.byKey(const Key('home-stories')), findsOneWidget);
-    expect(find.byKey(const Key('story-e-1')), findsOneWidget);
 
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -250));
-    await tester.pumpAndSettle();
+    final story = find.byKey(const Key('story-e-1'));
+    expect(story, findsOneWidget);
+    for (var i = 0; i < 8; i++) {
+      final rect = tester.getRect(story);
+      if (rect.top > 80 && rect.center.dy > 120 && rect.center.dy < 500) break;
+      await tester.drag(
+        find.byType(Scrollable).first,
+        Offset(0, rect.center.dy < 400 ? 140 : -140),
+      );
+      await tester.pumpAndSettle();
+    }
 
-    await tester.tap(find.byKey(const Key('story-e-1')));
+    await tester.tap(story);
     await tester.pumpAndSettle();
 
     expect(find.text('About'), findsOneWidget);

@@ -14,14 +14,24 @@ import '../discovery/widgets/category_pills.dart';
 import '../discovery/widgets/category_shelf_section.dart';
 import '../discovery/widgets/event_feed.dart';
 import '../discovery/widgets/featured_carousel.dart';
+import '../schedule/schedule_view.dart';
 import 'widgets/stories_row.dart';
 import 'widgets/floating_nav_bar.dart';
 
-class HomeScreen extends ConsumerWidget {
+enum HomeView { discover, schedule }
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  HomeView _view = HomeView.discover;
+
+  @override
+  Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final session = ref.watch(sessionControllerProvider).value;
     final user = switch (session) {
@@ -124,13 +134,45 @@ class HomeScreen extends ConsumerWidget {
           children: [
             const OfflineBanner(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Text(
                 user == null ? 'Discover' : 'Discover, ${user.username}',
                 style: textTheme.headlineLarge,
               ),
             ),
-            Expanded(child: EventFeed(headers: headers)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SegmentedButton<HomeView>(
+                segments: const [
+                  ButtonSegment(
+                    value: HomeView.discover,
+                    label: Text('Discover'),
+                    icon: Icon(Icons.explore_outlined),
+                  ),
+                  ButtonSegment(
+                    value: HomeView.schedule,
+                    label: Text('Schedule'),
+                    icon: Icon(Icons.calendar_month_outlined),
+                  ),
+                ],
+                selected: {_view},
+                showSelectedIcon: false,
+                onSelectionChanged: (selection) {
+                  setState(() => _view = selection.first);
+                },
+              ),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _view == HomeView.discover
+                    ? EventFeed(
+                        key: const ValueKey('home-discover'),
+                        headers: headers,
+                      )
+                    : const ScheduleView(key: ValueKey('home-schedule')),
+              ),
+            ),
           ],
         ),
       ),

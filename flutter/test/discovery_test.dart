@@ -201,7 +201,7 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Discover'), findsOneWidget);
+    expect(find.text('Discover, dev'), findsOneWidget);
     expect(find.text('Flutter Conf 2026'), findsWidgets);
     expect(find.text('Free'), findsWidgets);
 
