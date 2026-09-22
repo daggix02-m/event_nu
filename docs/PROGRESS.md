@@ -40,7 +40,7 @@ register → login → profile → organizer application → admin approval → 
 
 ## 2. Phase Tracker (spec §23 / plan §4)
 
-Current status: **Go backend API complete** — all backend phase-lots `00`–`20` shipped on `main` (see index `~/.local/share/opencode/plans/README.md`; schema at migration `00022` → DB v22). **Flutter application complete** — phases `21`–`27` shipped on `main` (2026-09-15): foundation/auth, discovery feed + event/venue/search, social (comments/likes/saves), engagement (RSVP/notifications/reviews/reports), tickets (checkout/QR wallet), offline (sync cache + offline banner + read-through feed fallback), media (share moments + event gallery + presigned upload). Final gate: `flutter analyze` No issues found · `flutter test` 35/35 PASS. Remaining work is the §5 production go-live checklist (external infra: Neon prod, Brevo templates 6/8 + SMTP relay, R2/CDN prod, admin app), not feature code.
+Current status: **Go backend API complete** — all backend phase-lots `00`–`20` shipped on `main` (see index `~/.local/share/opencode/plans/README.md`; schema at migration `00022` → DB v22). **Flutter application complete** — phases `21`–`28` shipped on `main` (2026-09-22): foundation/auth, discovery feed + event/venue/search, social (comments/likes/saves), engagement (RSVP/notifications/reviews/reports), tickets (checkout/QR wallet), offline (sync cache + offline banner + read-through feed fallback), media (share moments + event gallery + presigned upload), home upgrade (featured carousel + per-category shelves). Final gate: `flutter analyze` No issues found · `flutter test` 106/106 PASS. Remaining work is the §5 production go-live checklist (external infra: Neon prod, Brevo templates 6/8 + SMTP relay, R2/CDN prod, admin app), not feature code.
 
 | Phase | Area | Status |
 |---|---|---|
@@ -70,6 +70,7 @@ Current status: **Go backend API complete** — all backend phase-lots `00`–`2
 | 23 | Production hardening | **done** — `plans/phase-00…11` shipped on `main` (baseline, CI gates, auth quick wins, refresh atomicity, approval atomicity, rate limiting, admin recheck, pagination, idempotency, validation+metrics, worker reliability, final security audit). Remaining = go-live checklist §5 |
 | 24 | Production deployment | not started — §5 go-live checklist: Neon prod, Brevo templates 6/8 + SMTP relay 403, R2/CDN prod, admin app |
 | 24a | Config fail-fast + backend README | **done** — `6801c2f` (2026-09-02) |
+| 28 | Home upgrade (carousel + shelves) | **done** — FeaturedCarousel (auto-advance, progress dots, left/right tap zones, HeroMarquee fallback) + CategoryShelfSection shipped 2026-09-22; `plans/phase-28-home-upgrade/PLAN.md` acceptance criteria met (`flutter analyze` clean · `flutter test` 106/106)
 
 ---
 

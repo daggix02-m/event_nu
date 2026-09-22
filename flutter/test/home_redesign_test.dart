@@ -88,6 +88,7 @@ Event _event(String id, {String? categoryId}) => Event.fromJson({
       'category_id': categoryId,
       'title': 'Flutter Conf 2026',
       'description': 'A night of talks and beats.',
+      'poster_url': 'https://img.test/poster.jpg',
       'starts_at': '2026-10-01T09:00:00Z',
       'price_is_free': true,
       'price_display': '',

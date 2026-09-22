@@ -56,6 +56,7 @@ class FakeDiscoveryRepository extends DiscoveryRepository {
       'organizer_id': 'org-1',
       'title': 'Flutter Conf 2026',
       'description': 'Awesome conference',
+      'poster_url': 'https://img.test/poster.jpg',
       'starts_at': '2026-10-01T09:00:00Z',
       'price_is_free': true,
       'price_display': '',
@@ -199,26 +200,56 @@ void main() {
   testWidgets('HomeScreen renders greeting, events and category pills', (tester) async {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
+
     expect(find.textContaining('Discover'), findsOneWidget);
+    expect(find.text('Flutter Conf 2026'), findsWidgets);
+    expect(find.text('Free'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('All'),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('Tech'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('magazine-card-e-1')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Flutter Conf 2026'), findsWidgets);
 
     await tester.scrollUntilVisible(
-      find.text('Workshop: SwiftUI'),
+      find.byKey(const ValueKey('magazine-card-e-2')),
       200,
       scrollable: find.byType(Scrollable).first,
     );
 
     expect(find.text('Workshop: SwiftUI'), findsWidgets);
-    expect(find.text('Free'), findsWidgets);
     expect(find.text('500 ETB'), findsWidgets);
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('Tech'), findsOneWidget);
   });
 
   testWidgets('EventCard navigates to event detail screen', (tester) async {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Flutter Conf 2026').first);
+
+    final card = find.byKey(const ValueKey('magazine-card-e-1'));
+    await tester.scrollUntilVisible(
+      card,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    for (var i = 0; i < 8; i++) {
+      final rect = tester.getRect(card);
+      if (rect.top > 90 && rect.center.dy > 140 && rect.center.dy < 500) break;
+      await tester.drag(
+        find.byType(Scrollable).first,
+        Offset(0, rect.center.dy < 300 ? 120 : -120),
+      );
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(card);
     await tester.pumpAndSettle();
     expect(find.text('About'), findsOneWidget);
     expect(find.text('Venue'), findsNothing); // venueId is null

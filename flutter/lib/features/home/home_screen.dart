@@ -11,8 +11,9 @@ import '../../shared/widgets/event_nu_logo.dart';
 import '../discovery/data/event.dart';
 import '../discovery/discovery_providers.dart';
 import '../discovery/widgets/category_pills.dart';
+import '../discovery/widgets/category_shelf_section.dart';
 import '../discovery/widgets/event_feed.dart';
-import 'widgets/hero_marquee.dart';
+import '../discovery/widgets/featured_carousel.dart';
 import 'widgets/stories_row.dart';
 import 'widgets/floating_nav_bar.dart';
 
@@ -37,16 +38,8 @@ class HomeScreen extends ConsumerWidget {
         if (e.posterUrl != null || e.teaserUrl != null) e,
     ];
     final featured = photos.isNotEmpty ? photos.first : (events.isNotEmpty ? events.first : null);
-    final categoryNames = <String, String>{};
-    if (categoriesValue.value != null) {
-      for (final c in categoriesValue.value!) {
-        categoryNames[c.id] = c.name;
-      }
-    }
-    final featuredCategory = featured == null ? null : categoryNames[featured.categoryId];
-
     final headers = <Widget>[
-      HeroMarquee(featured: featured, categoryName: featuredCategory),
+      FeaturedCarousel(events: events),
       StoriesRow(events: events),
       if (user != null && !user.isVerified)
         Padding(
@@ -81,6 +74,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+      const CategoryShelfSection(),
     ];
 
     return Scaffold(
