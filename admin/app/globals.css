@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens mirrored from the Flutter app (flutter/lib/design/app_colors.dart,
+ * app_space.dart). The admin console is an internal tool for the same product,
+ * so it shares the identity: near-black surfaces, lavender primary, peach
+ * secondary, cyan tertiary.
+ */
+:root {
+  --surface: #141217;
+  --surface-lowest: #0f0d12;
+  --surface-low: #1d1b20;
+  --surface-container: #211f24;
+  --surface-container-high: #2b292e;
+  --surface-container-highest: #363439;
+  --on-surface: #e7e0e8;
+  --on-surface-variant: #cac4d0;
+  --outline: #948f9a;
+  --outline-variant: #49454f;
+
+  --primary: #e9ddff;
+  --on-primary: #37265e;
+  --primary-container: #d0bcff;
+  --on-primary-container: #594983;
+  --neon: #a078ff;
+
+  --secondary: #feb59d;
+  --secondary-container: #6e3b2a;
+  --on-secondary-container: #eea790;
+
+  --tertiary: #bfe8ff;
+  --tertiary-container: #78d1fb;
+
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+
+  --ok: #b9f6c1;
+  --ok-container: #1b5e20;
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-lowest: var(--surface-lowest);
+  --color-surface-low: var(--surface-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-neon: var(--neon);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+
+  --color-ok: var(--ok);
+  --color-ok-container: var(--ok-container);
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", monospace;
+}
+
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
