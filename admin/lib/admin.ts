@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type {
   AdminEvent,
   AdminOrganizerApplication,
@@ -23,7 +23,13 @@ async function adminFetch<T>(path: string): Promise<T> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? "http";
+  const jar = await cookies();
+  const cookieHeader = jar
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
   const res = await fetch(`${proto}://${host}${path}`, {
+    headers: cookieHeader ? { cookie: cookieHeader } : {},
     cache: "no-store",
     signal: AbortSignal.timeout(20_000),
   });
