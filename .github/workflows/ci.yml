@@ -89,4 +89,26 @@ jobs:
 
       - name: test
         working-directory: backend
-        run: go test -race -p 1 -count=1 ./...
+        # -timeout 30m matches the make ci gate: -p 1 runs the DB-backed
+        # handlers suite serially, and a long-lived dev DB can grow past the
+        # default 10m ceiling (see Makefile). CI's fresh Postgres is fast; the
+        # ceiling only guards the shared-dev-DB case.
+        run: go test -race -p 1 -count=1 -timeout 30m ./...
+
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint

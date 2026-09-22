@@ -6,6 +6,7 @@
 # Go
 backend/bin/
 backend/coverage.out
+backend/api
 
 # Node / Next.js
 node_modules/
